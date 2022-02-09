@@ -1,5 +1,3 @@
-using System.Collections.Generic;
-
 public class Function
 {
     public readonly FunctionType Type;

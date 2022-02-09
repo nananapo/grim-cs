@@ -1,6 +1,3 @@
-using System.Linq;
-using System.Collections.Generic;
-
 public class FunctionCall
 {
     public readonly string Name;

@@ -1,6 +1,3 @@
-using System.Linq;
-using System.Collections.Generic;
-
 public class Formula
 {
     public readonly List<Term> Terms;

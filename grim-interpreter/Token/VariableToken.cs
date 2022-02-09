@@ -5,7 +5,7 @@ public class VariableToken : ExpressionToken
 
     public VariableToken(string name)
     {
-        this.Name = name;
+        Name = name;
     }
 
     public override string ToString()
