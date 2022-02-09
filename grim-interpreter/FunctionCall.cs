@@ -4,7 +4,7 @@ public class FunctionCall
 
     public readonly List<Formula> Parameters;
 
-    public FunctionCall(string name,List<Formula> parameters)
+    public FunctionCall(string name,List<Formula>? parameters = null)
     {
         Name = name;
         Parameters = parameters ?? new ();

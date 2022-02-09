@@ -1,13 +1,13 @@
 public class VirtualMachine
 {
 
-    private readonly VirtualMachine Parent;
+    private readonly VirtualMachine? _parent;
 
-    private readonly Dictionary<string,object> Variables = new (); 
+    private readonly Dictionary<string,object> _variables = new (); 
 
-    public VirtualMachine(VirtualMachine parent = null)
+    public VirtualMachine(VirtualMachine? parent = null)
     {
-        Parent = parent;
+        _parent = parent;
     }
 
     public void Execute(TermToken seed)
@@ -21,22 +21,25 @@ public class VirtualMachine
             (index,formula) = NextFormula(seed,index);
             
             Console.WriteLine($"Formula[{index}]--\n{formula}");
+            
+            Evaluate(formula);
         }
     }
 
-    public void Evaluate(Formula formula)
+    private void Evaluate(Formula formula)
     {
+        Console.WriteLine($"--Evaluate--\n{formula}");
         
     }
 
     private (int index,Formula formula) NextFormula(TermToken seed,int index)
     {
-        var exprs = seed.Expressions;
+        var expressions = seed.Expressions;
 
         List<Term> terms = new ();
         List<Function> midOperators = new ();
 
-        while(-1 < index && index < exprs.Count)
+        while(-1 < index && index < expressions.Count)
         {
             Term term;
             (index, term) = NextTerm(seed, index);
@@ -59,24 +62,17 @@ public class VirtualMachine
 
     private (bool isMidOperator,int index,Function midOperator) NextMidOperator(TermToken term,int index)
     {
-        var exprs = term.Expressions;
-    
-        if(index < 0 || index >= exprs.Count)
-            return (false,index,null);
-
-        var expr = exprs[index];
-        if(expr is not VariableToken variable)
-            return (false,index,null);
+        if(index < 0 || 
+           index >= term.Expressions.Count ||
+           term.Expressions[index] is not VariableToken variable)
+            return (false,index,null)!;
 
         var searchResult = GetVariable(variable.Name);
-        if(searchResult == null)
-            return (false,index,null);
         
-        if(searchResult is not Function function)
-            return (false,index,null);
-        
-        if(function.Type != FunctionType.Mid)
-            return (false,index,null);
+        if(searchResult == null ||
+           searchResult is not Function function ||
+           function.Type != FunctionType.Mid)
+            return (false,index,null)!;
         
         return (true,index+1,function);
     }
@@ -135,7 +131,7 @@ public class VirtualMachine
                         name == "__input" ||
                         name == "__put")
                     {
-                        midTerm = new Term(new FunctionCall(name,null));
+                        midTerm = new Term(new FunctionCall(name));
                         break;
                     }
                     
@@ -155,7 +151,7 @@ public class VirtualMachine
                     if(func.Parameters.Count != 0)
                         throw new Exception($"Function {name} has {func.Parameters.Count} parameters, but no parameter was given.");
                     
-                    midTerm = new Term(new FunctionCall(name,null));
+                    midTerm = new Term(new FunctionCall(name));
                     break;
                 }
 
@@ -163,7 +159,7 @@ public class VirtualMachine
                 break;
             }
             default:
-                throw new Exception("nanikore ????");
+                throw new Exception("なにこれ????");
         }
 
         (index,suffixFuncs) = ReadFixFunctions(term,index+1,true);
@@ -185,7 +181,8 @@ public class VirtualMachine
             }
 
             var searchResult = GetVariable(variable.Name);
-            if(searchResult == null)
+
+            if (searchResult == null)
             {
                 return (index,functions);
             }
@@ -209,13 +206,13 @@ public class VirtualMachine
         return (-1,functions);
     }
 
-    public object GetVariable(string name)
+    public object? GetVariable(string name)
     {
-        return Variables.ContainsKey(name) ? Variables[name] : (Parent != null ? Parent.GetVariable(name) : null);
+        return _variables.ContainsKey(name) ? _variables[name] : (_parent != null ? _parent!.GetVariable(name) : null);
     }
 
     public void SetVariable(string name,object value)
     {
-        Variables[name] = value;
+        _variables[name] = value;
     }
 }
