@@ -6,13 +6,13 @@ public class NonModifierTerm : Term
 {
     public readonly TermType Type;
 
-    public readonly Formula Formula;
+    public readonly IFormula Formula;
     public readonly VariableToken Variable;
     public readonly ValueToken Value;
     public readonly FunctionCall FuncCall;
     public readonly FunctionToken Function;
     
-    public NonModifierTerm(Formula formula)
+    public NonModifierTerm(IFormula formula)
     {
         Type = TermType.Formula;
         Formula = formula;
@@ -52,7 +52,7 @@ public class NonModifierTerm : Term
             TermType.FunctionCall => FuncCall.ToString(),
             TermType.Function => Function.ToString(),
             _ => throw new NotImplementedException()
-        };
-        return nameof(Term) + $"<{Type}><{str}>";
+        } ?? "";
+        return $"NTerm<{str}>";
     }
 }

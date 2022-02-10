@@ -25,9 +25,9 @@ public class VirtualMachine
         
         var spaces = "";
         for (int i = 0; i < depth; i++)
-            spaces += "    ";
+            spaces += "  ";
         
-        Console.WriteLine(spaces + text);
+        Console.WriteLine(depth + spaces + text);
     }
 
     public Variable Execute(TermToken seed,Dictionary<string,Variable>? variables = null,int depth = 0)
@@ -49,7 +49,7 @@ public class VirtualMachine
         Variable returnVariable = new UnknownVariable(Variable.NoName);
         while(-1 < index && index < exprs.Count)
         {
-            Formula formula;
+            IFormula formula;
             (index,formula) = NextFormula(seed,index);
             returnVariable = Evaluate(formula,depth+1);
         }
@@ -58,11 +58,27 @@ public class VirtualMachine
         return returnVariable;
     }
 
+    private Variable Evaluate(IFormula target, int depth)
+    {
+        if (target is Formula formula)
+        {
+            return Evaluate(formula,depth);
+        }
+        if(target is Term term)
+        {
+            return Evaluate(term, depth);
+        }
+        throw new NotImplementedException();
+    }
+
     private Variable Evaluate(Formula formula,int depth)
     {
+        Debug($"EvaluateA : {formula}",depth);
+
+        Variable result;
+        
         var terms = formula.Terms.ToList();
         var ops = formula.MidOperators.ToList();
-
         while (terms.Count > 1)
         {
             var max = ops.Select(v => Math.Abs(v.Priority)).Max();
@@ -87,10 +103,9 @@ public class VirtualMachine
             }
             break;
         }
+        result = Evaluate(terms[0],depth+1);
         
-        var result = Evaluate(terms[0],depth+1);
         Debug($"-> {result}",depth);
-        
         return result;
     }
 
@@ -101,7 +116,7 @@ public class VirtualMachine
     /// <param name="depth"></param>
     private Variable Evaluate(Term target,int depth)
     { 
-        Debug($"Evaluate : {target}",depth);
+        Debug($"EvaluateB : {target}",depth);
 
         Variable variable;
         if (target is NonModifierTerm term)
@@ -175,7 +190,7 @@ public class VirtualMachine
         return variable;
     }
 
-    private Variable Evaluate(FunctionToken function, List<Formula> parameters,int depth)
+    private Variable Evaluate(FunctionToken function, List<IFormula> parameters,int depth)
     {
         if (function.Parameters.Count != parameters.Count)
             throw new ArgumentException("parameter not match");
@@ -194,7 +209,7 @@ public class VirtualMachine
         return Execute(function.Body,dict,depth);
     }
 
-    private Variable CallPrimitiveFunction(PrimitiveFunctionType type, List<Formula> parameters,int depth)
+    private Variable CallPrimitiveFunction(PrimitiveFunctionType type, List<IFormula> parameters,int depth)
     {
         // とりあえず評価しておく
         var variables = parameters.Select(f=>Evaluate(f,depth)).ToList();
@@ -230,7 +245,7 @@ public class VirtualMachine
         }
     }
 
-    private (int index,Formula formula) NextFormula(TermToken seed,int index)
+    private (int index,IFormula formula) NextFormula(TermToken seed,int index)
     {
         var exprs = seed.Expressions;
 
@@ -239,23 +254,35 @@ public class VirtualMachine
 
         while(-1 < index && index < exprs.Count)
         {
+            // Termを1つ読む
             Term term;
             (index, term) = NextTerm(seed, index);
             terms.Add(term);
             
+            // 中値演算子を1つ読む
             bool isMidOperator;
             FunctionToken midOp;
             (isMidOperator,index,midOp) = NextMidOperator(seed,index);
-
+            
             if(!isMidOperator)
-            {
-                return (index,new Formula(terms,midOperators));
-            }
-
+                break;
+            
             midOperators.Add(midOp);
         }
+        
+        // 中値演算子の数が合わないならエラー
+        if (terms.Count - 1 != midOperators.Count)
+        {
+            throw new Exception("中値演算子の数は");
+        }
 
-        return (-1,new Formula(terms,midOperators));
+        // Termが一つならそれを返す
+        if (midOperators.Count == 0 && terms.Count == 1)
+        {
+            return (index, terms[0]);
+        }
+        
+        return (index,new Formula(terms,midOperators));
     }
 
     private (bool isMidOperator,int index,FunctionToken midOperator) NextMidOperator(TermToken term,int index)
@@ -299,7 +326,7 @@ public class VirtualMachine
             case TermToken nterm:
             {
                 // TODO 読むのは一つだけ？
-                Formula formula;
+                IFormula formula;
                 (_,formula) = NextFormula(nterm,0);
                 midTerm = new NonModifierTerm(formula);
                 break;
@@ -307,10 +334,10 @@ public class VirtualMachine
             case FunctionCallToken funcCall:
             {
                 int nindex = 0;
-                List<Formula> parameters = new();
+                List<IFormula> parameters = new();
                 while(-1 < nindex && nindex < funcCall.Parameters.Expressions.Count)
                 {
-                    Formula formula;
+                    IFormula formula;
                     (nindex,formula) = NextFormula(funcCall.Parameters,nindex);
                     parameters.Add(formula);
                 }

@@ -17,8 +17,7 @@ public class ModifierTerm : Term
     
     public override string ToString()
     {
-        return nameof(ModifierTerm) + 
-               $"<P:{string.Join(",",PrefixFuncs.Select(v=>v.ToString()))}>" +
+        return $"MTerm<P:{string.Join(",",PrefixFuncs.Select(v=>v.ToString()))}>" +
                $"<T:{Term}>" +
                $"<S:{string.Join(",",SuffixFuncs.Select(v=>v.ToString()))}>";
     }

@@ -1,2 +1,2 @@
 ﻿__assign(print fun(text) __put(text) end)
-print("define print")
+print(print(print("define print")))

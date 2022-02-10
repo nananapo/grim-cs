@@ -2,7 +2,7 @@ using Grim.Token;
 
 namespace Grim.VM;
 
-public class Formula
+public class Formula : IFormula
 {
     public readonly List<Term> Terms;
 

@@ -1,4 +1,4 @@
 namespace Grim.VM;
-public interface Term
+public interface Term : IFormula
 {
 }
