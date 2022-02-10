@@ -1,6 +1,6 @@
-using grim_interpreter.VM;
+using Grim.VM;
 
-namespace grim_interpreter.Token;
+namespace Grim.Token;
 
 public class Tokenizer
 {
@@ -23,7 +23,7 @@ public class Tokenizer
     {
 
         int priority = -1;
-        if(type == FunctionType.Prefix || type == FunctionType.Suffix)
+        if(type != FunctionType.General)
         {
             string token;
             (index,token) = ReadToken(index);
@@ -49,6 +49,7 @@ public class Tokenizer
     // スペース区切り
     private (int index,List<VariableToken> func) ReadFunctionParameterDefinition(int index)
     {
+        var names = new List<string>();
         var tokens = new List<VariableToken>();
 
         while(index < _program.Length)
@@ -61,12 +62,21 @@ public class Tokenizer
                 case ")":
                     return (index,tokens);
                 case "\"":
+                case "fun":
+                case "opp":
+                case "opm":
+                case "ops":
+                    // TODO 他にも使えないtokenがあるはず
                     throw new Exception("Parameter illegal symbol");
             }
             
             if(index == -1)
                 throw new Exception("Parameter EOF");
 
+            if (names.Contains(token))
+                throw new Exception("同じ名前の引数を複数個定義することはできません");
+
+            names.Add(token);
             tokens.Add(new VariableToken(token));
         }
 

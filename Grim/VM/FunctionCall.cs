@@ -1,4 +1,4 @@
-namespace grim_interpreter.VM;
+namespace Grim.VM;
 
 public class FunctionCall
 {

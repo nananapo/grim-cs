@@ -1,5 +1,5 @@
-namespace grim_interpreter.Token;
+namespace Grim.Token;
 
-public abstract class ExpressionToken
+public interface ExpressionToken
 {
 }

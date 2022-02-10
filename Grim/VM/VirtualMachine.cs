@@ -1,19 +1,28 @@
-using grim_interpreter.Token;
+using Grim.Token;
 
-namespace grim_interpreter.VM;
+namespace Grim.VM;
 
 public class VirtualMachine
 {
 
     private readonly RunStack _runStack = new();
 
-    public VirtualMachine()
+    public bool EnableLogging = false;
+
+    private readonly Action<string> _outputFunction;
+
+    private readonly Func<string?> _inputFunction;
+
+    public VirtualMachine(Action<string>? outputFunc = null,Func<string?>? inputFunc = null)
     {
-        _runStack.Push();
+        _outputFunction = outputFunc ?? Console.Write;
+        _inputFunction = inputFunc ?? Console.ReadLine;
     }
 
     private void Debug(string text, int depth)
     {
+        if (!EnableLogging) return;
+        
         var spaces = "";
         for (int i = 0; i < depth; i++)
             spaces += "    ";
@@ -21,20 +30,32 @@ public class VirtualMachine
         Console.WriteLine(spaces + text);
     }
 
-    public void Execute(TermToken seed)
+    public Variable Execute(TermToken seed,Dictionary<string,Variable>? variables = null,int depth = 0)
     {
+        _runStack.Push();
+
+        if (variables != null)
+        {
+            foreach (var (name,variable) in variables)
+            {
+                _runStack.AssignHere(name,variable);
+            }
+        }
+        
         var exprs = seed.Expressions;
         int index = 0;
 
+        // TODO return判定
+        Variable returnVariable = new UnknownVariable(Variable.NoName);
         while(-1 < index && index < exprs.Count)
         {
             Formula formula;
             (index,formula) = NextFormula(seed,index);
-            
-            Console.WriteLine($"-----------------Formula[{index}]-----------------\n{formula}");
-            
-            Evaluate(formula,0);
+            returnVariable = Evaluate(formula,depth+1);
         }
+        
+        _runStack.Pop();
+        return returnVariable;
     }
 
     private Variable Evaluate(Formula formula,int depth)
@@ -100,9 +121,9 @@ public class VirtualMachine
                 var formulas = term.FuncCall.Parameters.ToList();
                 
                 // 関数が見つかった
-                if (_runStack.TryGetVariable(funcName,out Function func))
+                if (_runStack.TryGetVariable(funcName,out FunctionToken func))
                 {
-                    variable = Evaluate(func, formulas);
+                    variable = Evaluate(func, formulas,depth+1);
                 }
                 else
                 {
@@ -135,6 +156,9 @@ public class VirtualMachine
                     ? new ValueVariable<string>(Variable.NoName, term.Value.StrValue)
                     : new ValueVariable<int>(Variable.NoName, term.Value.IntValue);
                 break;
+            case Term.TermType.Function:
+                variable = term.Function;
+                break;
             default:
                 throw new Exception("Unknown error");
         }
@@ -146,10 +170,23 @@ public class VirtualMachine
         return variable;
     }
 
-    private Variable Evaluate(Function function, List<Formula> parameters)
+    private Variable Evaluate(FunctionToken function, List<Formula> parameters,int depth)
     {
-        // TODO stack
-        throw new NotImplementedException();
+        if (function.Parameters.Count != parameters.Count)
+            throw new ArgumentException("parameter not match");
+        
+        // 引数を評価
+        var variables = parameters.Select(f=>Evaluate(f,depth)).ToList();
+
+        var dict = new Dictionary<string, Variable>();
+        for (int i = 0; i < function.Parameters.Count; i++)
+        {
+            var pName = function.Parameters[i].Name;
+            var variable = variables[i];
+            dict[pName] = variable.Copy(pName);//TODO 参照渡し->名前の参照渡し？
+        }
+
+        return Execute(function.Body,dict,depth);
     }
 
     private Variable CallPrimitiveFunction(PrimitiveFunctionType type, List<Formula> parameters,int depth)
@@ -160,6 +197,7 @@ public class VirtualMachine
         switch (type)
         {
             case PrimitiveFunctionType.Assign:
+            {
                 if (variables.Count != 2)
                     throw new ArgumentException("parameter not match");
 
@@ -167,10 +205,21 @@ public class VirtualMachine
                 var value = variables[1];
                 _runStack.Assign(name, value.Copy(name));
                 return value;
+            }
             case PrimitiveFunctionType.Put:
+            {
                 var str = string.Join(" ", variables);
-                Console.Write(str);
+                _outputFunction(str);
                 return new ValueVariable<string>(Variable.NoName, str);
+            }
+            case PrimitiveFunctionType.Input:
+            {
+                if (variables.Count != 0)
+                    throw new ArgumentException("parameter not match");
+                
+                var str = _inputFunction();
+                return new ValueVariable<string>(Variable.NoName, str ?? "");
+            }
             default:
                 throw new NotImplementedException();
         }
@@ -181,7 +230,7 @@ public class VirtualMachine
         var exprs = seed.Expressions;
 
         List<Term> terms = new ();
-        List<Function> midOperators = new ();
+        List<FunctionToken> midOperators = new ();
 
         while(-1 < index && index < exprs.Count)
         {
@@ -190,7 +239,7 @@ public class VirtualMachine
             terms.Add(term);
             
             bool isMidOperator;
-            Function midOp;
+            FunctionToken midOp;
             (isMidOperator,index,midOp) = NextMidOperator(seed,index);
 
             if(!isMidOperator)
@@ -204,7 +253,7 @@ public class VirtualMachine
         return (-1,new Formula(terms,midOperators));
     }
 
-    private (bool isMidOperator,int index,Function midOperator) NextMidOperator(TermToken term,int index)
+    private (bool isMidOperator,int index,FunctionToken midOperator) NextMidOperator(TermToken term,int index)
     {
         if(index < 0 || 
            index >= term.Expressions.Count ||
@@ -213,7 +262,7 @@ public class VirtualMachine
 
         var searchResult = _runStack.GetVariable(variable.Name);
         
-        if(searchResult is not Function function ||
+        if(searchResult is not FunctionToken function ||
            function.Type != FunctionType.Mid)
             return (false,index,null)!;
         
@@ -224,9 +273,9 @@ public class VirtualMachine
     {
         var exprs = term.Expressions;
 
-        List<Function> prefixFuncs;
+        List<FunctionToken> prefixFuncs;
         Term midTerm;
-        List<Function> suffixFuncs;
+        List<FunctionToken> suffixFuncs;
 
         (index,prefixFuncs) = ReadFixFunctions(term,index,true);
 
@@ -258,9 +307,13 @@ public class VirtualMachine
                     Formula formula;
                     (nindex,formula) = NextFormula(funcCall.Parameters,nindex);
                     parameters.Add(formula);
-                    //Console.WriteLine(nindex + " " + formula);
                 }
                 midTerm = new Term(new FunctionCall(funcCall.Name,parameters));
+                break;
+            }
+            case FunctionToken func:
+            {
+                midTerm = new Term(func);
                 break;
             }
             case VariableToken variable:
@@ -288,7 +341,7 @@ public class VirtualMachine
                     break;
                 }
 
-                if(searchResult is Function func)
+                if(searchResult is FunctionToken func)
                 {
                     if(func.Parameters.Count != 0)
                         throw new Exception($"Function {name} has {func.Parameters.Count} parameters, but no parameter was given.");
@@ -301,7 +354,7 @@ public class VirtualMachine
                 break;
             }
             default:
-                throw new Exception("なにこれ????");
+                throw new Exception("なにこれ????" + exprs[index]);
         }
 
         (index,suffixFuncs) = ReadFixFunctions(term,index+1,true);
@@ -309,9 +362,9 @@ public class VirtualMachine
         return (index,new Term(prefixFuncs,midTerm,suffixFuncs));
     }
 
-    private (int index, List<Function> functions) ReadFixFunctions(TermToken term,int index,bool isPrefixMode)
+    private (int index, List<FunctionToken> functions) ReadFixFunctions(TermToken term,int index,bool isPrefixMode)
     {
-        var functions = new List<Function>();
+        var functions = new List<FunctionToken>();
         
         var exprs = term.Expressions;
         while(index < exprs.Count)
@@ -324,7 +377,7 @@ public class VirtualMachine
 
             var searchResult = _runStack.GetVariable(variable.Name);
 
-            if(searchResult is not Function func)
+            if(searchResult is not FunctionToken func)
             {
                 return (index,functions);
             }

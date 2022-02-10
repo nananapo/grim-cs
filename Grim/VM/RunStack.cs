@@ -1,4 +1,4 @@
-﻿namespace grim_interpreter.VM;
+﻿namespace Grim.VM;
 
 public class RunStack
 {
@@ -60,6 +60,14 @@ public class RunStack
         }
         
         _lexicalScope[0].Set(variable);
+    }
+
+    public void AssignHere(string name,Variable variable)
+    {
+        if (name != variable.VariableName)
+            throw new ArgumentException("variable.VariableName is not same with name");
+        
+        _lexicalScope[^1].Set(variable);
     }
 
     private class VariableSet

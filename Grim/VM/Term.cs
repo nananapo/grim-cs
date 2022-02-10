@@ -1,12 +1,12 @@
-using grim_interpreter.Token;
+using Grim.Token;
 
-namespace grim_interpreter.VM;
+namespace Grim.VM;
 
 public class Term
 {
 
-    public readonly List<Function> PrefixFuncs;
-    public readonly List<Function> SuffixFuncs;
+    public readonly List<FunctionToken> PrefixFuncs;
+    public readonly List<FunctionToken> SuffixFuncs;
 
     public enum TermType
     {
@@ -14,8 +14,8 @@ public class Term
         Formula,
         Variable,
         Value,
-        FunctionCall
-        //TODO Function
+        FunctionCall,
+        Function
     }
 
     public readonly TermType Type;
@@ -25,8 +25,9 @@ public class Term
     public readonly VariableToken Variable;
     public readonly ValueToken Value;
     public readonly FunctionCall FuncCall;
+    public readonly FunctionToken Function;
 
-    public Term(List<Function> prefix,Term term,List<Function> suffix)
+    public Term(List<FunctionToken> prefix,Term term,List<FunctionToken> suffix)
     {
         Type = TermType.Term;
         PrefixFuncs = prefix;
@@ -37,33 +38,41 @@ public class Term
     public Term(Formula formula)
     {
         Type = TermType.Formula;
-        PrefixFuncs = new List<Function>();
-        SuffixFuncs = new List<Function>();
+        PrefixFuncs = new List<FunctionToken>();
+        SuffixFuncs = new List<FunctionToken>();
         Formula = formula;
     }
 
     public Term(VariableToken variable)
     {
         Type = TermType.Variable;
-        PrefixFuncs = new List<Function>();
-        SuffixFuncs = new List<Function>();
+        PrefixFuncs = new List<FunctionToken>();
+        SuffixFuncs = new List<FunctionToken>();
         Variable = variable;
     }
 
     public Term(ValueToken value)
     {
         Type = TermType.Value;
-        PrefixFuncs = new List<Function>();
-        SuffixFuncs = new List<Function>();
+        PrefixFuncs = new List<FunctionToken>();
+        SuffixFuncs = new List<FunctionToken>();
         Value = value;
     }
 
     public Term(FunctionCall call)
     {
         Type = TermType.FunctionCall;
-        PrefixFuncs = new List<Function>();
-        SuffixFuncs = new List<Function>();
+        PrefixFuncs = new List<FunctionToken>();
+        SuffixFuncs = new List<FunctionToken>();
         FuncCall = call;
+    }
+
+    public Term(FunctionToken func)
+    {
+        Type = TermType.Function;
+        PrefixFuncs = new List<FunctionToken>();
+        SuffixFuncs = new List<FunctionToken>();
+        Function = func;
     }
 
     public override string ToString()
@@ -85,6 +94,9 @@ public class Term
                 break;
             case TermType.FunctionCall:
                 str += FuncCall.ToString();
+                break;
+            case TermType.Function:
+                str += Function.ToString();
                 break;
         }
         str += $"><S:{string.Join(",",SuffixFuncs.Select(v=>v.ToString()))}>";

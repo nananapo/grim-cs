@@ -1,12 +1,14 @@
-namespace grim_interpreter.VM;
+using Grim.Token;
+
+namespace Grim.VM;
 
 public class Formula
 {
     public readonly List<Term> Terms;
 
-    public readonly List<Function> MidOperators;
+    public readonly List<FunctionToken> MidOperators;
 
-    public Formula(List<Term> terms,List<Function> functions)
+    public Formula(List<Term> terms,List<FunctionToken> functions)
     {
         Terms = terms;
         MidOperators = functions;
