@@ -1,3 +1,7 @@
+using grim_interpreter.VM;
+
+namespace grim_interpreter.Token;
+
 public class Tokenizer
 {
     public const string Symbol = "()\" \t\n";

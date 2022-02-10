@@ -1,8 +1,12 @@
+using grim_interpreter.Token;
+
+namespace grim_interpreter.VM;
+
 public class Term
 {
 
-    public List<Function> PrefixFuncs;
-    public List<Function> SuffixFuncs;
+    public readonly List<Function> PrefixFuncs;
+    public readonly List<Function> SuffixFuncs;
 
     public enum TermType
     {
@@ -16,20 +20,11 @@ public class Term
 
     public readonly TermType Type;
 
-    public Term MyTerm;
-    public Formula Formula;
-    public VariableToken Variable;
-    public ValueToken Value;
-    public FunctionCall FuncCall;
-
-
-    public Term(Term term)
-    {
-        Type = TermType.Term;
-        PrefixFuncs = new List<Function>();
-        SuffixFuncs = new List<Function>();
-        MyTerm = term;
-    }
+    public readonly Term MyTerm;
+    public readonly Formula Formula;
+    public readonly VariableToken Variable;
+    public readonly ValueToken Value;
+    public readonly FunctionCall FuncCall;
 
     public Term(List<Function> prefix,Term term,List<Function> suffix)
     {

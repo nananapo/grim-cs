@@ -1,3 +1,5 @@
+namespace grim_interpreter.VM;
+
 public class FunctionCall
 {
     public readonly string Name;

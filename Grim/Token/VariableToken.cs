@@ -1,3 +1,5 @@
+namespace grim_interpreter.Token;
+
 public class VariableToken : ExpressionToken
 {
 

@@ -1,6 +1,8 @@
+namespace grim_interpreter.Token;
+
 public class ValueToken : ExpressionToken
 {
-    private readonly bool IsStrValue;
+    public readonly bool IsStrValue;
 
     public readonly string StrValue;
 

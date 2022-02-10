@@ -1,3 +1,7 @@
+using grim_interpreter.VM;
+
+namespace grim_interpreter.Token;
+
 public class FunctionToken : ExpressionToken
 {
 
@@ -26,7 +30,7 @@ public class FunctionToken : ExpressionToken
     public override string ToString()
     {
         return nameof(FunctionToken)
-         + "<" + string.Join(",",Parameters.Select(v=>v.ToString())) +  ">"
-         + "<" + Body + ">";
+               + "<" + string.Join(",",Parameters.Select(v=>v.ToString())) +  ">"
+               + "<" + Body + ">";
     }
 }

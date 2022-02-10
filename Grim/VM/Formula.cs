@@ -1,3 +1,5 @@
+namespace grim_interpreter.VM;
+
 public class Formula
 {
     public readonly List<Term> Terms;
