@@ -60,8 +60,6 @@ public class VirtualMachine
 
     private Variable Evaluate(Formula formula,int depth)
     {
-        Debug($"Evaluate : {formula}",depth);
-
         var terms = formula.Terms.ToList();
         var ops = formula.MidOperators.ToList();
 
@@ -87,7 +85,6 @@ public class VirtualMachine
             {
                 
             }
-
             break;
         }
         
@@ -100,33 +97,32 @@ public class VirtualMachine
     /// <summary>
     /// TODO 返り値はvoidじゃない
     /// </summary>
-    /// <param name="term"></param>
+    /// <param name="target"></param>
     /// <param name="depth"></param>
-    private Variable Evaluate(Term term,int depth)
-    {
-       Debug($"Evaluate : {term}",depth);
-        
+    private Variable Evaluate(Term target,int depth)
+    { 
+        Debug($"Evaluate : {target}",depth);
+
         Variable variable;
-        
-        switch (term.Type)
+        if (target is NonModifierTerm term)
         {
-            case Term.TermType.Term:
-                variable = Evaluate(term.MyTerm,depth+1);
-                break;
-            case Term.TermType.Formula:
-                variable = Evaluate(term.Formula,depth+1);
-                break;
-            case Term.TermType.FunctionCall:
-                var funcName = term.FuncCall.Name;
-                var formulas = term.FuncCall.Parameters.ToList();
-                
-                // 関数が見つかった
-                if (_runStack.TryGetVariable(funcName,out FunctionToken func))
+            switch (term.Type)
+            {
+                case TermType.Formula:
+                    variable = Evaluate(term.Formula,depth+1);
+                    break;
+                case TermType.FunctionCall:
                 {
-                    variable = Evaluate(func, formulas,depth+1);
-                }
-                else
-                {
+                    var funcName = term.FuncCall.Name;
+                    var formulas = term.FuncCall.Parameters.ToList();
+                    
+                    // 関数が見つかった
+                    if (_runStack.TryGetVariable(funcName,out FunctionToken func))
+                    {
+                        variable = Evaluate(func, formulas,depth+1);
+                        break;
+                    }
+                    
                     // builtin
                     switch (funcName)
                     {
@@ -145,27 +141,36 @@ public class VirtualMachine
                         default:
                             throw new Exception($"Function {funcName} not found");
                     }
+                    break;
                 }
-                break;
-            case Term.TermType.Variable:
-                variable = _runStack.GetVariable(term.Variable.Name);
-                // TODO ビルトイン関数の合成は？
-                break;
-            case Term.TermType.Value:
-                variable = term.Value.IsStrValue
-                    ? new ValueVariable<string>(Variable.NoName, term.Value.StrValue)
-                    : new ValueVariable<int>(Variable.NoName, term.Value.IntValue);
-                break;
-            case Term.TermType.Function:
-                variable = term.Function;
-                break;
-            default:
-                throw new Exception("Unknown error");
+                case TermType.Variable:
+                    // TODO ビルトイン関数の合成は？
+                    // TODO Unknownでいいの？ 名前は？
+                    variable = _runStack.GetVariable(term.Variable.Name);
+                    break;
+                case TermType.Value:
+                    variable = term.Value.IsStrValue
+                        ? new ValueVariable<string>(Variable.NoName, term.Value.StrValue)
+                        : new ValueVariable<int>(Variable.NoName, term.Value.IntValue);
+                    break;
+                case TermType.Function:
+                    variable = term.Function;
+                    break;
+                default:
+                    throw new NotImplementedException();
+            }
         }
-        
-        // TODO prefixとsuffixを処理
-        // TODO 関数なら合成したい
-        
+        else if (target is ModifierTerm mTerm)
+        {
+            variable = Evaluate(mTerm.Term,depth+1);
+            // TODO prefixとsuffixを処理
+            // TODO 関数なら合成
+        }
+        else
+        {
+            throw new NotImplementedException();
+        }
+
         Debug($"-> {variable}",depth);
         return variable;
     }
@@ -269,15 +274,15 @@ public class VirtualMachine
         return (true,index+1,function);
     }
 
-    private (int index,Term term) NextTerm(TermToken term,int index)
+    private (int index,Term term) NextTerm(TermToken target,int index)
     {
-        var exprs = term.Expressions;
+        var exprs = target.Expressions;
 
         List<FunctionToken> prefixFuncs;
         Term midTerm;
         List<FunctionToken> suffixFuncs;
 
-        (index,prefixFuncs) = ReadFixFunctions(term,index,true);
+        (index,prefixFuncs) = ReadFixFunctions(target,index,true);
 
         if(index == -1 && prefixFuncs.Count != 0)
         {
@@ -288,14 +293,15 @@ public class VirtualMachine
         {
             case ValueToken value:
             {
-                midTerm = new Term(value);
+                midTerm = new NonModifierTerm(value);
                 break;
             }
             case TermToken nterm:
             {
+                // TODO 読むのは一つだけ？
                 Formula formula;
                 (_,formula) = NextFormula(nterm,0);
-                midTerm = new Term(formula);
+                midTerm = new NonModifierTerm(formula);
                 break;
             }
             case FunctionCallToken funcCall:
@@ -308,12 +314,12 @@ public class VirtualMachine
                     (nindex,formula) = NextFormula(funcCall.Parameters,nindex);
                     parameters.Add(formula);
                 }
-                midTerm = new Term(new FunctionCall(funcCall.Name,parameters));
+                midTerm = new NonModifierTerm(new FunctionCall(funcCall.Name,parameters));
                 break;
             }
             case FunctionToken func:
             {
-                midTerm = new Term(func);
+                midTerm = new NonModifierTerm(func);
                 break;
             }
             case VariableToken variable:
@@ -327,17 +333,17 @@ public class VirtualMachine
                         name == "__input" ||
                         name == "__put")
                     {
-                        midTerm = new Term(new FunctionCall(name));
+                        midTerm = new NonModifierTerm(new FunctionCall(name));
                         break;
                     }
                     
                     if(int.TryParse(name,out int value))
                     {
-                        midTerm = new Term(new ValueToken(value));
+                        midTerm = new NonModifierTerm(new ValueToken(value));
                         break;
                     }
 
-                    midTerm = new Term(new VariableToken(name));
+                    midTerm = new NonModifierTerm(new VariableToken(name));
                     break;
                 }
 
@@ -346,20 +352,28 @@ public class VirtualMachine
                     if(func.Parameters.Count != 0)
                         throw new Exception($"Function {name} has {func.Parameters.Count} parameters, but no parameter was given.");
                     
-                    midTerm = new Term(new FunctionCall(name));
+                    midTerm = new NonModifierTerm(new FunctionCall(name));
                     break;
                 }
 
-                midTerm = new Term(new VariableToken(name));
+                midTerm = new NonModifierTerm(new VariableToken(name));
                 break;
             }
             default:
                 throw new Exception("なにこれ????" + exprs[index]);
         }
 
-        (index,suffixFuncs) = ReadFixFunctions(term,index+1,true);
+        (index,suffixFuncs) = ReadFixFunctions(target,index+1,true);
 
-        return (index,new Term(prefixFuncs,midTerm,suffixFuncs));
+        // 前置演算子も後置演算子もないならそのまま返す
+        if (prefixFuncs.Count == 0 &&
+            suffixFuncs.Count == 0)
+        {
+            return (index, midTerm);
+        }
+        
+        // 演算子で修飾して返す
+        return (index,new ModifierTerm(prefixFuncs,midTerm,suffixFuncs));
     }
 
     private (int index, List<FunctionToken> functions) ReadFixFunctions(TermToken term,int index,bool isPrefixMode)

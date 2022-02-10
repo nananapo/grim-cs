@@ -1,0 +1,14 @@
+﻿TermToken<
+    FunctionCallToken<__put><
+        TermToken<
+            TermToken<
+                ValueToken<String><kanapi>,
+                FunctionCallToken<__put><
+                    TermToken<
+                        ValueToken<String><hello>
+                        >
+                >
+            >
+        >
+    >
+>
