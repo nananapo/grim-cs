@@ -60,7 +60,7 @@ public class VirtualMachine
 
     private Variable Evaluate(IFormula target, int depth)
     {
-        depth++;
+        //Debug($"EA {target}",depth);
         return target switch
         {
             Formula formula => Evaluate(formula, depth),
@@ -75,7 +75,7 @@ public class VirtualMachine
 
     private Variable Evaluate(Formula formula,int depth)
     {
-        Debug($"EvaluateF : {formula}",depth);
+        Debug($"EvalF : {formula}",depth);
 
         Variable result;
         
@@ -83,6 +83,17 @@ public class VirtualMachine
         var ops = formula.MidOperators.ToList();
         while (terms.Count > 1)
         {
+            // 式だけが連続する場合、最後のTermを残して抜ける
+            if (ops.Count == 0)
+            {
+                for (int i = 0; i < terms.Count-1; i++)
+                {
+                    Evaluate(terms[0], depth + 1);
+                    terms.RemoveAt(0);
+                }
+                break;
+            }
+
             var max = ops.Select(v => Math.Abs(v.Priority)).Max();
             var lefts = ops.Where(v => v.Priority == -max).ToList();
             var rights = ops.Where(v => v.Priority == max).ToList();
@@ -113,28 +124,13 @@ public class VirtualMachine
 
     private Variable Evaluate(FunctionCall funcCall,int depth)
     {
-        Debug($"EvaluateC : {funcCall}",depth);
-        
         var funcName = funcCall.Name;
         var formulas = funcCall.Parameters.ToList();
                     
         // 関数が見つかった
         if (_runStack.TryGetVariable(funcName,out FunctionToken function))
         {
-            if (function.Parameters.Count != formulas.Count)
-                throw new ArgumentException("parameter not match");
-        
-            // 引数を評価
-            var variables = formulas.Select(f=>Evaluate(f,depth)).ToList();
-
-            var dict = new Dictionary<string, Variable>();
-            for (int i = 0; i < function.Parameters.Count; i++)
-            {
-                var pName = function.Parameters[i].Name;
-                dict[pName] = variables[i].Copy(pName);//TODO 参照渡し->名前の参照渡し？
-            }
-
-            return Execute(function.Body,dict,depth);
+            return Evaluate(function, formulas, depth);
         }
                     
         // builtin
@@ -160,24 +156,42 @@ public class VirtualMachine
         return variable;
     }
 
+    private Variable Evaluate(FunctionToken function, List<IFormula> formulas,int depth)
+    {
+        if (function.Parameters.Count != formulas.Count)
+            throw new ArgumentException("parameter not match");
+        
+        // 引数を評価
+        var variables = formulas.Select(f=>Evaluate(f,depth+1)).ToList();
+
+        var dict = new Dictionary<string, Variable>();
+        for (int i = 0; i < function.Parameters.Count; i++)
+        {
+            var pName = function.Parameters[i].Name;
+            dict[pName] = variables[i].Copy(pName);//TODO 参照渡し->名前の参照渡し？
+        }
+
+        return Execute(function.Body,dict,depth);
+    }
+
     private Variable Evaluate(ValueToken token,int depth)
     {
-        Debug($"EvaluateV : {token}",depth);
+        Debug($"EvalV : {token}",depth);
         return token.IsStrValue
             ? new ValueVariable<string>(Variable.NoName, token.StrValue)
             : new ValueVariable<int>(Variable.NoName, token.IntValue);
     }
 
     /// <summary>
-    /// TODO 返り値はvoidじゃない
     /// </summary>
     /// <param name="term"></param>
     /// <param name="depth"></param>
     private Variable Evaluate(ModifierTerm term,int depth)
     { 
-        Debug($"EvaluateM : {term}",depth);
+        Debug($"EvalMT : {term}",depth);
 
         Variable variable = Evaluate(term.Term,depth+1);
+        
         // TODO prefixとsuffixを処理
         // TODO 関数なら合成
         
@@ -190,11 +204,12 @@ public class VirtualMachine
 
     private Variable CallPrimitiveFunction(PrimitiveFunctionType type, List<IFormula> parameters,int depth)
     {        
-        Debug($"CallPrmvF : {type}",depth);
+        Debug($"EvalP : {type}",depth);
 
         // とりあえず評価しておく
-        var variables = parameters.Select(f=>Evaluate(f,depth)).ToList();
-        
+        var variables = parameters.Select(f=>Evaluate(f,depth+1)).ToList();
+
+        Variable result;
         switch (type)
         {
             case PrimitiveFunctionType.Assign:
@@ -205,13 +220,15 @@ public class VirtualMachine
                 var name = variables[0].VariableName;
                 var value = variables[1];
                 _runStack.Assign(name, value.Copy(name));
-                return value;
+                result = value;
+                break;
             }
             case PrimitiveFunctionType.Put:
             {
                 var str = string.Join(" ", variables);
                 _outputFunction(str);
-                return new ValueVariable<string>(Variable.NoName, str);
+                result = new ValueVariable<string>(Variable.NoName, str);
+                break;
             }
             case PrimitiveFunctionType.Input:
             {
@@ -219,11 +236,15 @@ public class VirtualMachine
                     throw new ArgumentException("parameter not match");
                 
                 var str = _inputFunction();
-                return new ValueVariable<string>(Variable.NoName, str ?? "");
+                result = new ValueVariable<string>(Variable.NoName, str ?? "");
+                break;
             }
             default:
                 throw new NotImplementedException();
         }
+        
+        Debug($"-> {result}",depth);
+        return result;
     }
 
     private (int index,IFormula formula) NextFormula(TermToken seed,int index)
@@ -240,6 +261,8 @@ public class VirtualMachine
             (index, term) = NextTerm(seed, index);
             terms.Add(term);
             
+            // TODO これ、Termが読めないことはあるのか？
+            
             // 中値演算子を1つ読む
             bool isMidOperator;
             FunctionToken midOp;
@@ -249,12 +272,12 @@ public class VirtualMachine
                 break;
             
             midOperators.Add(midOp);
-        }
+        } 
         
         // 中値演算子の数が合わないならエラー
         if (terms.Count - 1 != midOperators.Count)
         {
-            throw new Exception("中値演算子の数は");
+            throw new Exception("中値演算子の数は項の数-1である必要があります");
         }
 
         // Termが一つならそれを返す
@@ -307,9 +330,15 @@ public class VirtualMachine
             case TermToken term:
             {
                 // TODO 読むのは一つだけ？
-                IFormula formula;
-                (_,formula) = NextFormula(term,0);
-                midTerm = formula;
+                int nindex = 0;
+                var formulas = new List<IFormula>();
+                while (-1 < nindex && nindex < term.Expressions.Count)
+                {
+                    IFormula formula;
+                    (nindex,formula) = NextFormula(term,nindex);
+                    formulas.Add(formula);
+                }
+                midTerm = new Formula(formulas,new List<FunctionToken>());
                 break;
             }
             case FunctionCallToken funcCall:
@@ -337,20 +366,11 @@ public class VirtualMachine
 
                 if(searchResult is UnknownVariable unknown)
                 {
-                    if( name == "__assign" ||
-                        name == "__input" ||
-                        name == "__put")
-                    {
-                        midTerm = new FunctionCall(name);
-                        break;
-                    }
-                    
                     if(int.TryParse(name,out int value))
                     {
                         midTerm = new ValueToken(value);
                         break;
                     }
-
                     midTerm = unknown;
                     break;
                 }
@@ -384,6 +404,13 @@ public class VirtualMachine
         return (index,new ModifierTerm(prefixFuncs,midTerm,suffixFuncs));
     }
 
+    /// <summary>
+    /// 前置演算子か後置演算子の列を
+    /// </summary>
+    /// <param name="term"></param>
+    /// <param name="index"></param>
+    /// <param name="isPrefixMode"></param>
+    /// <returns></returns>
     private (int index, List<FunctionToken> functions) ReadFixFunctions(TermToken term,int index,bool isPrefixMode)
     {
         var functions = new List<FunctionToken>();

@@ -33,8 +33,11 @@ public static class Test
             if (iIndex >= inputs.Length)
                 throw new Exception($"Assertion Failed : input call count\n expected : {inputs.Length}");
             return inputs[iIndex++];
-        });
-        
+        })
+        {
+            EnableLogging = true
+        };
+
         vm.Execute(term);
         
         if(oIndex != outputs.Length)
@@ -43,6 +46,6 @@ public static class Test
         if(iIndex != inputs.Length)
             throw new Exception($"Assertion Failed : input call count\n expected : {inputs.Length}\n actual : {iIndex}");
         
-        Console.WriteLine($"Assertion Succeeded {programFilePath}");
+        Console.WriteLine($"\nAssertion Succeeded {programFilePath}\n");
     }
 }

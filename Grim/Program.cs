@@ -22,8 +22,10 @@ switch (args[0])
         
         Console.WriteLine(term);
         
-        var vm = new VirtualMachine();
-        vm.EnableLogging = true;
+        var vm = new VirtualMachine
+        {
+            EnableLogging = true
+        };
         vm.Execute(term);
         break;
     case "test":

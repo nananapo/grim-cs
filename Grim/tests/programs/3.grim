@@ -1,1 +1,1 @@
-__put(("kanapi" __put("hello")))
+__put((__put("hello") "kanapi"))

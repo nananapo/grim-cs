@@ -1,2 +1,2 @@
-﻿__assign(print fun(text) __put(text) end)
-print(print(print("define print")))
+﻿(__put("ka1") "ka2")
+unko
