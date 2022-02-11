@@ -1,6 +1,6 @@
 namespace Grim.VM;
 
-public class FunctionCall
+public class FunctionCall : IFormula
 {
     public readonly string Name;
 
@@ -14,6 +14,6 @@ public class FunctionCall
 
     public override string ToString()
     {
-        return nameof(FunctionCall) + $"<{Name}><P:{string.Join(",",Parameters.Select(v=>v.ToString()))}>";
+        return nameof(FunctionCall) + $"<{Name}><{string.Join(",",Parameters.Select(v=>v.ToString()))}>";
     }
 }

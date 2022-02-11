@@ -1,6 +1,8 @@
+using Grim.VM;
+
 namespace Grim.Token;
 
-public class ValueToken : ExpressionToken
+public class ValueToken : ExpressionToken,IFormula
 {
     public readonly bool IsStrValue;
 

@@ -1,6 +1,6 @@
 ﻿namespace Grim.VM;
 
-public abstract class Variable
+public abstract class Variable : IFormula
 {
     public const string NoName = "__NONAME__";
     

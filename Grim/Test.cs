@@ -19,6 +19,7 @@ public static class Test
         
         var vm = new VirtualMachine(actual =>
         {
+            // TODO 改行を考慮
             if (oIndex >= outputs.Length)
                 throw new Exception($"Assertion Failed : put call count\n expected : {outputs.Length}\n value : {actual}");
 
@@ -28,6 +29,7 @@ public static class Test
             oIndex++;
         }, () =>
         {
+            // TODO 改行を考慮
             if (iIndex >= inputs.Length)
                 throw new Exception($"Assertion Failed : input call count\n expected : {inputs.Length}");
             return inputs[iIndex++];

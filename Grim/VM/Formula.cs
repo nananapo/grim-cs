@@ -4,11 +4,11 @@ namespace Grim.VM;
 
 public class Formula : IFormula
 {
-    public readonly List<Term> Terms;
+    public readonly List<IFormula> Terms;
 
     public readonly List<FunctionToken> MidOperators;
 
-    public Formula(List<Term> terms,List<FunctionToken> functions)
+    public Formula(List<IFormula> terms,List<FunctionToken> functions)
     {
         Terms = terms;
         MidOperators = functions;
