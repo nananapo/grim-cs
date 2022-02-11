@@ -100,7 +100,6 @@ public class Tokenizer
             //Console.WriteLine(index + " : " + str);
 
             ExpressionToken expr;
-
             switch(str)
             {
                 case "":
@@ -145,16 +144,16 @@ public class Tokenizer
             }
             
             // indexがプログラム範囲内で、直後が(なら関数呼び出し
-            if(-1 < index && index < _program.Length && _program[index] == '(')
+            while(-1 < index && index < _program.Length && _program[index] == '(')
             {
                 TermToken fct;
+                // 引数を読み込む
                 (index,fct) = ReadBody(index+1,")",true);
-                exprs.Add(new FunctionCallToken(expr,fct));
+                // 関数呼び出しとして保存
+                expr = new FunctionCallToken(expr,fct);
             }
-            else
-            {
-                exprs.Add(expr);
-            }
+            
+            exprs.Add(expr);
         }
 
         return !requireClose ? (-1,new TermToken(exprs)) : throw new Exception("body didn't close before EOF.");
@@ -205,11 +204,9 @@ public class Tokenizer
             var s = _program[index];
             if(Symbol.Contains(s))
             {
-                if(token.Length == 0){
-                    return (index+1,s.ToString());
-                }else{
-                    return (index,token); 
-                }
+                return token.Length == 0 ? 
+                    (index+1,s.ToString()) : // シンボル
+                    (index,token); // トークン
             }
             token += s;
             index++;

@@ -156,7 +156,7 @@ public class VirtualMachine
         // それ以外ならエラー
         else
         {
-            throw new  Exception();
+            throw new  Exception("Value is not function");
         }
 
         Debug($"-> {result}",depth);
@@ -433,9 +433,6 @@ public class VirtualMachine
                 // 変数が関数なら、関数をそのまま渡す
                 if(searchResult is FunctionToken func)
                 {
-                    if(func.Parameters.Count != 0)
-                        throw new Exception($"Function {name} has {func.Parameters.Count} parameters, but no parameter was given.");
-
                     result = func.Copy(name);
                     break;
                 }

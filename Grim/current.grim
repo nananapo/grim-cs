@@ -1,1 +1,3 @@
-﻿fun fun end end()()
+﻿__assign(test fun(a) fun a end end)
+__assign(a "this is dynamic scope")
+test("ん?")()
