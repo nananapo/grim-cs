@@ -4,6 +4,7 @@ namespace Grim.Token;
 
 public class Tokenizer
 {
+    
     public const string Symbol = "()\" \t\n";
 
     private readonly string _program;
@@ -159,25 +160,68 @@ public class Tokenizer
         return !requireClose ? (-1,new TermToken(exprs)) : throw new Exception("body didn't close before EOF.");
     }
 
+    /// <summary>
+    /// 文字列を読む
+    /// </summary>
+    /// <param name="index">開始インデックス</param>
+    /// <param name="endSymbol">終了シンボル</param>
+    /// <returns></returns>
+    /// <exception cref="Exception"></exception>
     private (int index,string str) ReadString(int index,char endSymbol)
     {
-        if(index == -1 || index >= _program.Length) return (-1,"");
+        // index
+        if(index == -1 || index >= _program.Length) 
+            return (-1,"");
 
-        string str = "";
-        while(index < _program.Length)
+        bool readEscapeSequence = false;
+        string token = "";
+        
+        for (; index < _program.Length; index++)
         {
-            if(_program[index] == endSymbol){
-                return (index+1,str);
+            var str = _program[index];
+            if (readEscapeSequence)
+            {
+                token += str switch
+                {
+                    'a' => "\a",
+                    'b' => "\b",
+                    'f' => "\f",
+                    'n' => "\n",
+                    'r' => "\r",
+                    't' => "\t",
+                    'v' => "\v",
+                    '\\' => "\\",
+                    '\"' => "\"",
+                    // エスケープ文字ではないならエラー
+                    _ => throw new Exception($"Unknown escape symbol : {str}")
+                };
+                readEscapeSequence = false;
             }
-            str += _program[index];
-            index++;
+            else
+            {
+                // エスケープシーケンスの開始
+                if (str == '\\')
+                {
+                    readEscapeSequence = true;
+                    continue;
+                }
+
+                // 文字列終了
+                if(str == endSymbol){
+                    return (index+1,token);
+                }
+                token += str; // 一文字足す
+            }
         }
-        throw new Exception("String symbol not closed EOF");
+
+        throw new Exception("EOF : string not closed.");
     }
 
     private int SkipSpace(int index)
     {
-        if(index == -1 || index >= _program.Length) return -1;
+        if(index == -1 || index >= _program.Length) 
+            return -1;
+        
         while(index < _program.Length)
         {
             if(_program[index] != ' ' && _program[index] != '\t' && _program[index] != '\n')

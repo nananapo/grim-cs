@@ -3,3 +3,6 @@ __assign(test fun(a) fun a end end)
 __assign(a "this is dynamic scope")
 print(test("test")())
 
+__assign(void fun end)
+void()
+
