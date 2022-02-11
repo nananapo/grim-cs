@@ -23,7 +23,7 @@ public class VirtualMachine
     {
         if (!EnableLogging) return;
         
-        var spaces = "";
+        var spaces = " ";
         for (int i = 0; i < depth; i++)
             spaces += "  ";
         
@@ -51,7 +51,11 @@ public class VirtualMachine
         {
             IFormula formula;
             (index,formula) = NextFormula(seed,index);
-            returnVariable = Evaluate(formula,depth+1);
+            
+            Console.WriteLine("F" + formula);
+            
+            returnVariable = Evaluate(formula,depth);
+            //Debug("Result " + returnVariable.GetType() + " : " + returnVariable,depth);
         }
         
         _runStack.Pop();
@@ -76,8 +80,20 @@ public class VirtualMachine
     private Variable Evaluate(Formula formula,int depth)
     {
         Debug($"EvalF : {formula}",depth);
-
+        
         Variable result;
+        
+        // TODO これはParse段階で除外したい
+        if (formula.Terms.Count == 0)
+        {
+            if (formula.MidOperators.Count != 0)
+                throw new Exception("中値演算子が不正な位置にあります");
+            
+            result = new UnknownVariable(Variable.NoName); // TODO NoNameをやめて、Voidにしたい
+            
+            Debug($"-> {result}",depth);
+            return result;
+        }
         
         var terms = formula.Terms.ToList();
         var ops = formula.MidOperators.ToList();
@@ -124,9 +140,13 @@ public class VirtualMachine
 
     private Variable Evaluate(FunctionCall funcCall,int depth)
     {
-        var funcName = funcCall.Name;
+        // 引数
         var formulas = funcCall.Parameters.ToList();
-                    
+
+        var funcName = funcCall.Name;
+        
+        
+        /* ここからは名前で関数を呼ぶ場合 */
         // 関数が見つかった
         if (_runStack.TryGetVariable(funcName,out FunctionToken function))
         {
@@ -343,6 +363,7 @@ public class VirtualMachine
             }
             case FunctionCallToken funcCall:
             {
+                
                 int nindex = 0;
                 List<IFormula> parameters = new();
                 while(-1 < nindex && nindex < funcCall.Parameters.Expressions.Count)
@@ -351,7 +372,20 @@ public class VirtualMachine
                     (nindex,formula) = NextFormula(funcCall.Parameters,nindex);
                     parameters.Add(formula);
                 }
-                midTerm = new FunctionCall(funcCall.Name,parameters);
+
+                nindex = 0;
+                IFormula function = null;
+                while (-1 < nindex && nindex < funcCall.Function.Expressions.Count)
+                {
+                    (nindex,function) = NextFormula(funcCall.Function, nindex);
+                }
+
+                if (function == null)
+                {
+                    throw new Exception("lambda is not found.");
+                }
+
+                midTerm = new FunctionCall(function,parameters);
                 break;
             }
             case FunctionToken func:
@@ -375,12 +409,13 @@ public class VirtualMachine
                     break;
                 }
 
+                // 変数が関数なら、関数をそのまま渡す
                 if(searchResult is FunctionToken func)
                 {
                     if(func.Parameters.Count != 0)
                         throw new Exception($"Function {name} has {func.Parameters.Count} parameters, but no parameter was given.");
-                    
-                    midTerm = new FunctionCall(name);
+
+                    midTerm = func.Copy(name);
                     break;
                 }
 
