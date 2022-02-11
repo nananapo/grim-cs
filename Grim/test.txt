@@ -12,3 +12,27 @@
         >
     >
 >
+
+TermToken<FunctionCallToken<FunctionToken<><TermToken<>>><TermToken<>>>
+TermToken<
+    FunctionCallToken<
+        FunctionToken<><
+            TermToken<>
+        >
+    ><
+        TermToken<>
+    >
+>
+
+TermToken<
+    FunctionCallToken<
+        FunctionToken<><
+            TermToken<
+                FunctionToken<><
+                    TermToken<>
+                >
+            >
+        >
+    ><
+    TermToken<>
+    >,TermToken<>> ←()()が処理できてない

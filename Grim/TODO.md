@@ -53,3 +53,5 @@ opp end value ops end ← これはできるようにしたい
 次はreturnの実装
 ・returnを指定しないなら最後の式の評価を返す
 ・式が名前を許容しない限り、式の評価がUnknownVariableで終了することを許さない
+
+Variableの名前を消したい

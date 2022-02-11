@@ -2,11 +2,11 @@ namespace Grim.Token;
 
 public class FunctionCallToken : ExpressionToken
 {
-    public readonly TermToken Function;
+    public readonly ExpressionToken Function;
 
     public readonly TermToken Parameters;
 
-    public FunctionCallToken(TermToken function, TermToken parameters)
+    public FunctionCallToken(ExpressionToken function, TermToken parameters)
     {
         Function = function;
         Parameters = parameters;

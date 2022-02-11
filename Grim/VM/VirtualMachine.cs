@@ -51,9 +51,6 @@ public class VirtualMachine
         {
             IFormula formula;
             (index,formula) = NextFormula(seed,index);
-            
-            Console.WriteLine("F" + formula);
-            
             returnVariable = Evaluate(formula,depth);
             //Debug("Result " + returnVariable.GetType() + " : " + returnVariable,depth);
         }
@@ -69,8 +66,8 @@ public class VirtualMachine
         {
             Formula formula => Evaluate(formula, depth),
             FunctionCall call => Evaluate(call, depth),
-            ValueToken valueToken => Evaluate(valueToken,depth),
-            ModifierTerm modifierTerm => Evaluate(modifierTerm,depth),
+            ValueToken valueToken => EvaluateValue(valueToken,depth),
+            ModifierTerm modifierTerm => EvaluateTerm(modifierTerm,depth),
             FunctionToken functionToken => functionToken,
             Variable variable => variable,
             _ => throw new NotImplementedException(target.GetType().FullName)
@@ -140,73 +137,37 @@ public class VirtualMachine
 
     private Variable Evaluate(FunctionCall funcCall,int depth)
     {
-        // 引数
-        var formulas = funcCall.Parameters.ToList();
+        Debug($"EvalC : {funcCall}",depth);
+        // 関数を取得する
+        var function = Evaluate(funcCall.Lambda, depth+1);
 
-        var funcName = funcCall.Name;
+        Variable result;
         
-        
-        /* ここからは名前で関数を呼ぶ場合 */
-        // 関数が見つかった
-        if (_runStack.TryGetVariable(funcName,out FunctionToken function))
+        // 正常に取得できた場合、実行する
+        if (function is FunctionToken functionToken)
         {
-            return Evaluate(function, formulas, depth);
+            result = CallFunction(functionToken,funcCall.Parameters,depth+1);
         }
-                    
-        // builtin
-        Variable variable;
-        switch (funcName)
+        // unknownなら名前で呼ぶ
+        else if (function is UnknownVariable unknown)
         {
-            case "__let":
-                variable = CallPrimitiveFunction(PrimitiveFunctionType.Let, formulas,depth);
-                break;
-            case "__assign":
-                variable = CallPrimitiveFunction(PrimitiveFunctionType.Assign, formulas,depth);
-                break;
-            case "__put":
-                variable = CallPrimitiveFunction(PrimitiveFunctionType.Put, formulas,depth);
-                break;
-            case "__input":
-                variable = CallPrimitiveFunction(PrimitiveFunctionType.Input, formulas,depth);
-                break;
-            default:
-                throw new Exception($"Function {funcName} not found");
+            result = CallFunctionWithName(unknown.VariableName, funcCall.Parameters, depth+1);
+        }
+        // それ以外ならエラー
+        else
+        {
+            throw new  Exception();
         }
 
-        return variable;
-    }
-
-    private Variable Evaluate(FunctionToken function, List<IFormula> formulas,int depth)
-    {
-        if (function.Parameters.Count != formulas.Count)
-            throw new ArgumentException("parameter not match");
-        
-        // 引数を評価
-        var variables = formulas.Select(f=>Evaluate(f,depth+1)).ToList();
-
-        var dict = new Dictionary<string, Variable>();
-        for (int i = 0; i < function.Parameters.Count; i++)
-        {
-            var pName = function.Parameters[i].Name;
-            dict[pName] = variables[i].Copy(pName);//TODO 参照渡し->名前の参照渡し？
-        }
-
-        return Execute(function.Body,dict,depth);
-    }
-
-    private Variable Evaluate(ValueToken token,int depth)
-    {
-        Debug($"EvalV : {token}",depth);
-        return token.IsStrValue
-            ? new ValueVariable<string>(Variable.NoName, token.StrValue)
-            : new ValueVariable<int>(Variable.NoName, token.IntValue);
+        Debug($"-> {result}",depth);
+        return result;
     }
 
     /// <summary>
     /// </summary>
     /// <param name="term"></param>
     /// <param name="depth"></param>
-    private Variable Evaluate(ModifierTerm term,int depth)
+    private Variable EvaluateTerm(ModifierTerm term,int depth)
     { 
         Debug($"EvalMT : {term}",depth);
 
@@ -222,7 +183,90 @@ public class VirtualMachine
         return variable;
     }
 
-    private Variable CallPrimitiveFunction(PrimitiveFunctionType type, List<IFormula> parameters,int depth)
+    /// <summary>
+    /// ValueTokenを評価する
+    /// </summary>
+    /// <param name="token"></param>
+    /// <param name="depth"></param>
+    /// <returns></returns>
+    private Variable EvaluateValue(ValueToken token,int depth)
+    {
+        Debug($"EvalV : {token}",depth);
+        return token.IsStrValue
+            ? new ValueVariable<string>(Variable.NoName, token.StrValue)
+            : new ValueVariable<int>(Variable.NoName, token.IntValue);
+    }
+
+    private Variable CallFunctionWithName(string name,List<IFormula> parameters,int depth)
+    {
+        // 関数を見つけた
+        if (_runStack.TryGetVariable(name,out FunctionToken function))
+        {
+            return CallFunction(function, parameters, depth);
+        }
+                    
+        // builtin
+        Variable variable;
+        switch (name)
+        {
+            case "__let":
+                variable = EvaluatePrimitiveFunction(PrimitiveFunctionType.Let, parameters,depth);
+                break;
+            case "__assign":
+                variable = EvaluatePrimitiveFunction(PrimitiveFunctionType.Assign, parameters,depth);
+                break;
+            case "__put":
+                variable = EvaluatePrimitiveFunction(PrimitiveFunctionType.Put, parameters,depth);
+                break;
+            case "__input":
+                variable = EvaluatePrimitiveFunction(PrimitiveFunctionType.Input, parameters,depth);
+                break;
+            default:
+                if (name == Variable.NoName)
+                {
+                    // TODO
+                }
+                throw new Exception($"Function {name} not found");
+        }
+
+        return variable;
+    }
+    
+    /// <summary>
+    /// FunctionTokenを評価する
+    /// </summary>
+    /// <param name="function"></param>
+    /// <param name="formulas"></param>
+    /// <param name="depth"></param>
+    /// <returns></returns>
+    /// <exception cref="ArgumentException"></exception>
+    private Variable CallFunction(FunctionToken function, List<IFormula> formulas,int depth)
+    {
+        Debug($"EvalFT : {function}",depth);
+        
+        // 引数の数を確認する
+        if (function.Parameters.Count != formulas.Count)
+            throw new ArgumentException("parameter not match");
+        
+        // 引数を評価
+        var variables = formulas.Select(f=>Evaluate(f,depth+1)).ToList();
+
+        var dict = new Dictionary<string, Variable>();
+        for (int i = 0; i < function.Parameters.Count; i++)
+        {
+            var pName = function.Parameters[i].Name;
+            dict[pName] = variables[i].Copy(pName);//TODO 参照渡し->名前の参照渡し？
+        }
+
+        // 関数を実行
+        var result = Execute(function.Body,dict,depth);
+        
+        //結果を返す
+        Debug($"-> {result}",depth);
+        return result;
+    }
+
+    private Variable EvaluatePrimitiveFunction(PrimitiveFunctionType type, List<IFormula> parameters,int depth)
     {        
         Debug($"EvalP : {type}",depth);
 
@@ -325,74 +369,51 @@ public class VirtualMachine
         return (true,index+1,function);
     }
 
-    private (int index,IFormula term) NextTerm(TermToken target,int index)
+    private IFormula ReadFormula(ExpressionToken expr)
     {
-        var exprs = target.Expressions;
-
-        List<FunctionToken> prefixFuncs;
-        IFormula midTerm;
-        List<FunctionToken> suffixFuncs;
-
-        (index,prefixFuncs) = ReadFixFunctions(target,index,true);
-
-        if(index == -1 && prefixFuncs.Count != 0)
-        {
-            throw new Exception($"There are {prefixFuncs.Count} prefix operators, but formula is not found.");
-        }
-
-        switch(exprs[index])
+        IFormula result;
+        
+        switch(expr)
         {
             case ValueToken value:
-            {
-                midTerm = value;
+                result = value;
                 break;
-            }
             case TermToken term:
             {
                 // TODO 読むのは一つだけ？
-                int nindex = 0;
+                int index = 0;
                 var formulas = new List<IFormula>();
-                while (-1 < nindex && nindex < term.Expressions.Count)
+                while (-1 < index && index < term.Expressions.Count)
                 {
                     IFormula formula;
-                    (nindex,formula) = NextFormula(term,nindex);
+                    (index,formula) = NextFormula(term,index);
                     formulas.Add(formula);
                 }
-                midTerm = new Formula(formulas,new List<FunctionToken>());
+                result = new Formula(formulas,new List<FunctionToken>());
                 break;
             }
             case FunctionCallToken funcCall:
             {
-                
-                int nindex = 0;
+                // 引数を取り出す   
+                int index = 0;
                 List<IFormula> parameters = new();
-                while(-1 < nindex && nindex < funcCall.Parameters.Expressions.Count)
+                while(-1 < index && index < funcCall.Parameters.Expressions.Count)
                 {
                     IFormula formula;
-                    (nindex,formula) = NextFormula(funcCall.Parameters,nindex);
+                    (index,formula) = NextFormula(funcCall.Parameters,index);
                     parameters.Add(formula);
                 }
 
-                nindex = 0;
-                IFormula function = null;
-                while (-1 < nindex && nindex < funcCall.Function.Expressions.Count)
-                {
-                    (nindex,function) = NextFormula(funcCall.Function, nindex);
-                }
-
-                if (function == null)
-                {
-                    throw new Exception("lambda is not found.");
-                }
-
-                midTerm = new FunctionCall(function,parameters);
+                // 関数本体を取り出す
+                IFormula function = ReadFormula(funcCall.Function);
+                
+                // 関数呼び出しとして終了
+                result = new FunctionCall(function,parameters);
                 break;
             }
             case FunctionToken func:
-            {
-                midTerm = func;
+                result = func;
                 break;
-            }
             case VariableToken variable:
             {
                 var name = variable.Name;
@@ -402,10 +423,10 @@ public class VirtualMachine
                 {
                     if(int.TryParse(name,out int value))
                     {
-                        midTerm = new ValueToken(value);
+                        result = new ValueToken(value);
                         break;
                     }
-                    midTerm = unknown;
+                    result = unknown;
                     break;
                 }
 
@@ -415,17 +436,39 @@ public class VirtualMachine
                     if(func.Parameters.Count != 0)
                         throw new Exception($"Function {name} has {func.Parameters.Count} parameters, but no parameter was given.");
 
-                    midTerm = func.Copy(name);
+                    result = func.Copy(name);
                     break;
                 }
 
-                midTerm = searchResult;
+                result = searchResult;
                 break;
             }
             default:
-                throw new Exception("なにこれ????" + exprs[index]);
+                throw new NotImplementedException(expr.ToString());
         }
 
+        return result;
+    }
+
+    private (int index,IFormula term) NextTerm(TermToken target,int index)
+    {
+        var exprs = target.Expressions;
+
+        List<FunctionToken> prefixFuncs;
+        (index,prefixFuncs) = ReadFixFunctions(target,index,true);
+
+        // 前置演算子だけで終了した
+        if(index == -1 && prefixFuncs.Count != 0)
+        {
+            //TODO エラーではなくて、関数を合成する？
+            throw new Exception($"There are {prefixFuncs.Count} prefix operators, but formula is not found.");
+        }
+        
+        // 本体を読む
+        IFormula midTerm = ReadFormula(exprs[index]);
+        
+        // 後置演算子を読む
+        List<FunctionToken> suffixFuncs;
         (index,suffixFuncs) = ReadFixFunctions(target,index+1,true);
 
         // 前置演算子も後置演算子もないならそのまま返す
