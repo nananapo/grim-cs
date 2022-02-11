@@ -64,9 +64,12 @@ public class VirtualMachine
         //Debug($"EA {target}",depth);
         return target switch
         {
+            // 定数
+            ConstantData<string> value => value,
+            ConstantData<int> value => value,
+            
             Formula formula => Evaluate(formula, depth),
             FunctionCall call => Evaluate(call, depth),
-            ValueToken valueToken => EvaluateValue(valueToken,depth),
             ModifierTerm modifierTerm => EvaluateTerm(modifierTerm,depth),
             FunctionToken functionToken => functionToken,
             Void v => v,
@@ -183,20 +186,6 @@ public class VirtualMachine
 
         Debug($"-> {variable}",depth);
         return variable;
-    }
-
-    /// <summary>
-    /// ValueTokenを評価する
-    /// </summary>
-    /// <param name="token"></param>
-    /// <param name="depth"></param>
-    /// <returns></returns>
-    private IVariable EvaluateValue(ValueToken token,int depth)
-    {
-        Debug($"EvalV : {token}",depth);
-        return token.IsStrValue
-            ? new ConstantData<string>(token.StrValue)
-            : new ConstantData<int>(token.IntValue);
     }
 
     private IVariable CallFunctionWithName(string name,List<IFormula> parameters,int depth)
@@ -384,7 +373,10 @@ public class VirtualMachine
         
         switch(expr)
         {
-            case ValueToken value:
+            case ConstantData<string> value:
+                result = value;
+                break;
+            case ConstantData<int> value:
                 result = value;
                 break;
             case TermToken term:
@@ -433,7 +425,7 @@ public class VirtualMachine
                     // TODO 名前型の明示
                     if(int.TryParse(name,out int value))
                     {
-                        result = new ValueToken(value);
+                        result = new ConstantData<int>(value);
                         break;
                     }
                     result = new NameType(name);

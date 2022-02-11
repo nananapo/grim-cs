@@ -1,6 +1,8 @@
-﻿namespace Grim.VM;
+﻿using Grim.Token;
 
-public class ConstantData<T> : IVariable
+namespace Grim.VM;
+
+public class ConstantData<T> : IVariable,ExpressionToken
 {
     public T Value;
     

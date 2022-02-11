@@ -128,7 +128,7 @@ public class Tokenizer
                 case "\"":
                     string stt;
                     (index,stt) = ReadString(index,'"');
-                    expr = new ValueToken(stt);
+                    expr = new ConstantData<string>(stt);
                     break;
                 default:
                     expr = new VariableToken(str);
@@ -137,8 +137,8 @@ public class Tokenizer
 
             //直後に(がつく、関数呼び出しかどうかを確認する
             
-            // ValueTokenの後ろは必ず関数呼び出しではないので除外
-            if (expr is ValueToken)
+            // ConstantDataの後ろは必ず関数呼び出しではないので除外
+            if (expr is ConstantData<string>)
             {
                 exprs.Add(expr);
                 continue;

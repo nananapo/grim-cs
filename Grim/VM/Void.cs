@@ -1,6 +1,8 @@
-﻿namespace Grim.VM;
+﻿using Grim.Token;
 
-public sealed class Void : IVariable
+namespace Grim.VM;
+
+public sealed class Void : IVariable,ExpressionToken
 {
     private Void()
     {
