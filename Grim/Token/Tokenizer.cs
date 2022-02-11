@@ -83,7 +83,7 @@ public class Tokenizer
         return (index,tokens);
     }
 
-    private (int index, TermToken terms) ReadBody(int index,string endSymbol,bool requireClose = true)
+    private (int index, TermToken terms) ReadBody(int index,string endSymbol,bool requireClose)
     {
         List<ExpressionToken> exprs = new ();
 
@@ -131,21 +131,30 @@ public class Tokenizer
                     expr = new ValueToken(stt);
                     break;
                 default:
-                    if(-1 < index && index < _program.Length && _program[index] == '(')
-                    {
-                        TermToken fct;
-                        (index,fct) = ReadBody(index+1,")");
-                        exprs.Add(new FunctionCallToken(str,fct));
-                    }
-                    else
-                    {
-                        expr = new VariableToken(str);
-                        exprs.Add(expr);
-                    }
-                    continue;
+                    expr = new VariableToken(str);
+                    break;
             }
 
-            exprs.Add(expr);
+            //直後に(がつく、関数呼び出しかどうかを確認する
+            
+            // ValueTokenの後ろは必ず関数呼び出しではないので除外
+            if (expr is ValueToken)
+            {
+                exprs.Add(expr);
+                continue;
+            }
+            
+            // indexがプログラム範囲内で、直後が(なら関数呼び出し
+            if(-1 < index && index < _program.Length && _program[index] == '(')
+            {
+                TermToken fct;
+                (index,fct) = ReadBody(index+1,")",true);
+                exprs.Add(new FunctionCallToken(expr,fct));
+            }
+            else
+            {
+                exprs.Add(expr);
+            }
         }
 
         return !requireClose ? (-1,new TermToken(exprs)) : throw new Exception("body didn't close before EOF.");
