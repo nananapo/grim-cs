@@ -2,18 +2,18 @@ namespace Grim.Token;
 
 public class FunctionCallToken : ExpressionToken
 {
-    public readonly string Name;
+    public readonly TermToken Function;
 
     public readonly TermToken Parameters;
 
-    public FunctionCallToken(string name,TermToken parameters)
+    public FunctionCallToken(TermToken function, TermToken parameters)
     {
-        Name = name;
+        Function = function;
         Parameters = parameters;
     }
 
     public override string ToString()
     {
-        return nameof(FunctionCallToken) + $"<{Name}><{Parameters}>";
+        return nameof(FunctionCallToken) + $"<{Function}><{Parameters}>";
     }
 }
