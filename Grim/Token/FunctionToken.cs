@@ -2,7 +2,7 @@ using Grim.VM;
 
 namespace Grim.Token;
 
-public class FunctionToken : Variable,ExpressionToken
+public class FunctionToken : IVariable,ExpressionToken
 {
 
     public readonly FunctionType Type;
@@ -13,17 +13,7 @@ public class FunctionToken : Variable,ExpressionToken
 
     public readonly int Priority;
 
-    public FunctionToken(FunctionType type,List<VariableToken> parameters,TermToken body,int priority) : base(NoName)
-    {
-        Type = type;
-        Parameters = parameters;
-        Body = body;
-        Priority = priority;
-        Check();
-    }
-
-    public FunctionToken(string varName, FunctionType type, List<VariableToken> parameters, TermToken body,
-        int priority) : base(varName)
+    public FunctionToken(FunctionType type,List<VariableToken> parameters,TermToken body,int priority)
     {
         Type = type;
         Parameters = parameters;
@@ -46,10 +36,5 @@ public class FunctionToken : Variable,ExpressionToken
         return nameof(FunctionToken)
                + "<" + string.Join(",",Parameters.Select(v=>v.ToString())) +  ">"
                + "<" + Body + ">";
-    }
-
-    public override FunctionToken Copy(string newName)
-    {
-        return new FunctionToken(newName, Type, Parameters, Body, Priority);
     }
 }

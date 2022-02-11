@@ -18,21 +18,20 @@ public class RunStack
     }
     
     // TODO スコープの指定
-    public bool TryGetVariable<T>(string name, out T variable) where T : Variable
+    public bool TryGetVariable<T>(string name, out T variable) where T : IVariable
     {
         variable = GetVariable(name) as T;
         return variable != null;
     }
 
     // TODO スコープの指定
-    public bool TryGetVariable(string name, out Variable variable)
+    public bool TryGetVariable(string name, out IVariable variable)
     {
         variable = GetVariable(name);
-        return variable is not UnknownVariable;
+        return variable is not Void;
     }
 
-    // TODO スコープの指定
-    public Variable GetVariable(string name)
+    public IVariable GetVariable(string name)
     {
         foreach (var set in _lexicalScope)
         {
@@ -41,52 +40,44 @@ public class RunStack
                 return set.Get(name);
             }
         }
-        return new UnknownVariable(name);
+        return Void.Create();
     }
 
-    //TODO スコープの指定
-    public void Assign(string name,Variable variable)
+    public void Assign(string name,IVariable variable)
     {
-        if (name != variable.VariableName)
-            throw new ArgumentException("variable.VariableName is not same with name");
-        
         foreach (var set in _lexicalScope)
         {
             if (set.Exists(name))
             {
-                set.Set(variable);
+                set.Set(name,variable);
                 return;
             }
         }
-        
-        _lexicalScope[0].Set(variable);
+        _lexicalScope[0].Set(name,variable);
     }
 
-    public void AssignHere(string name,Variable variable)
+    public void AssignHere(string name,IVariable variable)
     {
-        if (name != variable.VariableName)
-            throw new ArgumentException("variable.VariableName is not same with name");
-        
-        _lexicalScope[^1].Set(variable);
+        _lexicalScope[^1].Set(name,variable);
     }
 
     private class VariableSet
     {
-        private readonly Dictionary<string, Variable> _dict = new();
+        private readonly Dictionary<string, IVariable> _dict = new();
 
         public bool Exists(string name)
         {
             return _dict.ContainsKey(name);
         }
 
-        public Variable Get(string name)
+        public IVariable Get(string name)
         {
-            return Exists(name) ? _dict[name] : new UnknownVariable(name);
+            return Exists(name) ? _dict[name] : Void.Create();
         }
 
-        public void Set(Variable variable)
+        public void Set(string name,IVariable variable)
         {
-            _dict[variable.VariableName] = variable;
+            _dict[name] = variable;
         }
     }
 }

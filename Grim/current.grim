@@ -1,3 +1,5 @@
-﻿__assign(test fun(a) fun a end end)
+﻿__assign(print fun(text) __put(text) end)
+__assign(test fun(a) fun a end end)
 __assign(a "this is dynamic scope")
-test("ん?")()
+print(test("test")())
+

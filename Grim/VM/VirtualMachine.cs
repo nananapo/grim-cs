@@ -30,7 +30,7 @@ public class VirtualMachine
         Console.WriteLine(depth + spaces + text);
     }
 
-    public Variable Execute(TermToken seed,Dictionary<string,Variable>? variables = null,int depth = 0)
+    public IVariable Execute(TermToken seed,Dictionary<string,IVariable>? variables = null,int depth = 0)
     {
         _runStack.Push();
 
@@ -46,7 +46,7 @@ public class VirtualMachine
         int index = 0;
 
         // TODO return判定
-        Variable returnVariable = new UnknownVariable(Variable.NoName);
+        IVariable returnVariable = Void.Create();
         while(-1 < index && index < exprs.Count)
         {
             IFormula formula;
@@ -59,7 +59,7 @@ public class VirtualMachine
         return returnVariable;
     }
 
-    private Variable Evaluate(IFormula target, int depth)
+    private IVariable Evaluate(IFormula target, int depth)
     {
         //Debug($"EA {target}",depth);
         return target switch
@@ -69,25 +69,25 @@ public class VirtualMachine
             ValueToken valueToken => EvaluateValue(valueToken,depth),
             ModifierTerm modifierTerm => EvaluateTerm(modifierTerm,depth),
             FunctionToken functionToken => functionToken,
-            Variable variable => variable,
+            Void v => v,
+            IVariable variable => variable,
             _ => throw new NotImplementedException(target.GetType().FullName)
         };
     }
 
-    private Variable Evaluate(Formula formula,int depth)
+    private IVariable Evaluate(Formula formula,int depth)
     {
         Debug($"EvalF : {formula}",depth);
         
-        Variable result;
+        IVariable result;
         
         // TODO これはParse段階で除外したい
         if (formula.Terms.Count == 0)
         {
             if (formula.MidOperators.Count != 0)
                 throw new Exception("中値演算子が不正な位置にあります");
-            
-            result = new UnknownVariable(Variable.NoName); // TODO NoNameをやめて、Voidにしたい
-            
+
+            result = Void.Create();
             Debug($"-> {result}",depth);
             return result;
         }
@@ -135,23 +135,23 @@ public class VirtualMachine
         return result;
     }
 
-    private Variable Evaluate(FunctionCall funcCall,int depth)
+    private IVariable Evaluate(FunctionCall funcCall,int depth)
     {
         Debug($"EvalC : {funcCall}",depth);
         // 関数を取得する
         var function = Evaluate(funcCall.Lambda, depth+1);
 
-        Variable result;
+        IVariable result;
         
         // 正常に取得できた場合、実行する
         if (function is FunctionToken functionToken)
         {
             result = CallFunction(functionToken,funcCall.Parameters,depth+1);
         }
-        // unknownなら名前で呼ぶ
-        else if (function is UnknownVariable unknown)
+        // 名前なら名前で呼ぶ
+        else if (function is NameType nameType)
         {
-            result = CallFunctionWithName(unknown.VariableName, funcCall.Parameters, depth+1);
+            result = CallFunctionWithName(nameType.Name, funcCall.Parameters, depth+1);
         }
         // それ以外ならエラー
         else
@@ -167,11 +167,13 @@ public class VirtualMachine
     /// </summary>
     /// <param name="term"></param>
     /// <param name="depth"></param>
-    private Variable EvaluateTerm(ModifierTerm term,int depth)
+    private IVariable EvaluateTerm(ModifierTerm term,int depth)
     { 
         Debug($"EvalMT : {term}",depth);
 
-        Variable variable = Evaluate(term.Term,depth+1);
+        IVariable variable = Evaluate(term.Term,depth+1);
+        
+        
         
         // TODO prefixとsuffixを処理
         // TODO 関数なら合成
@@ -189,15 +191,15 @@ public class VirtualMachine
     /// <param name="token"></param>
     /// <param name="depth"></param>
     /// <returns></returns>
-    private Variable EvaluateValue(ValueToken token,int depth)
+    private IVariable EvaluateValue(ValueToken token,int depth)
     {
         Debug($"EvalV : {token}",depth);
         return token.IsStrValue
-            ? new ValueVariable<string>(Variable.NoName, token.StrValue)
-            : new ValueVariable<int>(Variable.NoName, token.IntValue);
+            ? new ConstantData<string>(token.StrValue)
+            : new ConstantData<int>(token.IntValue);
     }
 
-    private Variable CallFunctionWithName(string name,List<IFormula> parameters,int depth)
+    private IVariable CallFunctionWithName(string name,List<IFormula> parameters,int depth)
     {
         // 関数を見つけた
         if (_runStack.TryGetVariable(name,out FunctionToken function))
@@ -206,7 +208,7 @@ public class VirtualMachine
         }
                     
         // builtin
-        Variable variable;
+        IVariable variable;
         switch (name)
         {
             case "__let":
@@ -221,11 +223,10 @@ public class VirtualMachine
             case "__input":
                 variable = EvaluatePrimitiveFunction(PrimitiveFunctionType.Input, parameters,depth);
                 break;
+            case "return":
+                throw new NotImplementedException();
+                break;
             default:
-                if (name == Variable.NoName)
-                {
-                    // TODO
-                }
                 throw new Exception($"Function {name} not found");
         }
 
@@ -240,7 +241,7 @@ public class VirtualMachine
     /// <param name="depth"></param>
     /// <returns></returns>
     /// <exception cref="ArgumentException"></exception>
-    private Variable CallFunction(FunctionToken function, List<IFormula> formulas,int depth)
+    private IVariable CallFunction(FunctionToken function, List<IFormula> formulas,int depth)
     {
         Debug($"EvalFT : {function}",depth);
         
@@ -251,11 +252,11 @@ public class VirtualMachine
         // 引数を評価
         var variables = formulas.Select(f=>Evaluate(f,depth+1)).ToList();
 
-        var dict = new Dictionary<string, Variable>();
+        var dict = new Dictionary<string, IVariable>();
         for (int i = 0; i < function.Parameters.Count; i++)
         {
             var pName = function.Parameters[i].Name;
-            dict[pName] = variables[i].Copy(pName);//TODO 参照渡し->名前の参照渡し？
+            dict[pName] = variables[i];　//TODO 参照渡し->名前の参照渡し？
         }
 
         // 関数を実行
@@ -266,24 +267,32 @@ public class VirtualMachine
         return result;
     }
 
-    private Variable EvaluatePrimitiveFunction(PrimitiveFunctionType type, List<IFormula> parameters,int depth)
+    private IVariable EvaluatePrimitiveFunction(PrimitiveFunctionType type, List<IFormula> parameters,int depth)
     {        
         Debug($"EvalP : {type}",depth);
 
         // とりあえず評価しておく
         var variables = parameters.Select(f=>Evaluate(f,depth+1)).ToList();
 
-        Variable result;
+        IVariable result;
         switch (type)
         {
             case PrimitiveFunctionType.Assign:
             {
                 if (variables.Count != 2)
+                {
                     throw new ArgumentException("parameter not match");
+                }
 
-                var name = variables[0].VariableName;
+                if (variables[0] is not NameType nameType)
+                {
+                    throw new ArgumentException("assignの第一引数は名前型である必要があります。");
+                }
+
+                var name = nameType.Name;
                 var value = variables[1];
-                _runStack.Assign(name, value.Copy(name));
+                _runStack.Assign(name, value);
+                
                 result = value;
                 break;
             }
@@ -291,7 +300,7 @@ public class VirtualMachine
             {
                 var str = string.Join(" ", variables);
                 _outputFunction(str);
-                result = new ValueVariable<string>(Variable.NoName, str);
+                result = new ConstantData<string>(str);
                 break;
             }
             case PrimitiveFunctionType.Input:
@@ -300,7 +309,7 @@ public class VirtualMachine
                     throw new ArgumentException("parameter not match");
                 
                 var str = _inputFunction();
-                result = new ValueVariable<string>(Variable.NoName, str ?? "");
+                result = new ConstantData<string>(str ?? "");
                 break;
             }
             default:
@@ -419,21 +428,22 @@ public class VirtualMachine
                 var name = variable.Name;
                 var searchResult = _runStack.GetVariable(name);
 
-                if(searchResult is UnknownVariable unknown)
+                if(searchResult is Void)
                 {
+                    // TODO 名前型の明示
                     if(int.TryParse(name,out int value))
                     {
                         result = new ValueToken(value);
                         break;
                     }
-                    result = unknown;
+                    result = new NameType(name);
                     break;
                 }
 
                 // 変数が関数なら、関数をそのまま渡す
                 if(searchResult is FunctionToken func)
                 {
-                    result = func.Copy(name);
+                    result = func;
                     break;
                 }
 

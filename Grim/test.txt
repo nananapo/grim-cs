@@ -35,4 +35,5 @@ TermToken<
         >
     ><
     TermToken<>
-    >,TermToken<>> ←()()が処理できてない
+    >,TermToken<>> ←()()が処理できてない : できました！
+    

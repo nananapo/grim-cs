@@ -6,5 +6,4 @@ public enum PrimitiveFunctionType
     Input,
     Let,
     Assign,
-    
 }
