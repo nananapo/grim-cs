@@ -17,19 +17,20 @@ public static class Test
         var oIndex = 0;
         var iIndex = 0;
         
-        var vm = new VirtualMachine(actual =>
+        var vm = new VirtualMachine(str =>
         {
-            // TODO 改行を考慮
-            if (oIndex >= outputs.Length)
-                throw new Exception($"Assertion Failed : put call count\n expected : {outputs.Length}\n value : {actual}");
+            foreach (var actual in str.Split("\n"))
+            {
+                if (oIndex >= outputs.Length)
+                    throw new Exception($"Assertion Failed : put call count\n expected : {outputs.Length}\n value : {actual}");
 
-            if (actual != outputs[oIndex])
-                throw new Exception($"Assertion Failed\n expected : {outputs[oIndex]}\n actual : {actual}");
+                if (actual != outputs[oIndex])
+                    throw new Exception($"Assertion Failed\n expected : {outputs[oIndex]}\n actual : {actual}");
 
-            oIndex++;
+                oIndex++;
+            }
         }, () =>
         {
-            // TODO 改行を考慮
             if (iIndex >= inputs.Length)
                 throw new Exception($"Assertion Failed : input call count\n expected : {inputs.Length}");
             return inputs[iIndex++];
