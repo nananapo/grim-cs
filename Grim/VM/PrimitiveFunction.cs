@@ -7,6 +7,8 @@ public class PrimitiveFunction : IVariable
         Put,
         Input,
         Assign,
+        Add,
+        Equal
     }
 
     public readonly Type Function;
@@ -38,6 +40,12 @@ public class PrimitiveFunction : IVariable
                 break;
             case "__input":
                 primitiveFunction = Create(Type.Input);
+                break;
+            case "__add":
+                primitiveFunction = Create(Type.Add);
+                break;
+            case "__equal":
+                primitiveFunction = Create(Type.Equal);
                 break;
             default:
                 primitiveFunction = null;

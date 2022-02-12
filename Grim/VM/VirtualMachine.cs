@@ -1,3 +1,4 @@
+using Grim.Errors;
 using Grim.Token;
 
 namespace Grim.VM;
@@ -329,6 +330,39 @@ public class VirtualMachine
                 
                 var str = _inputFunction();
                 result = new ConstantData<string>(str ?? "");
+                break;
+            }
+            case PrimitiveFunction.Type.Add:
+            {
+                if (variables.Count != 2)
+                    throw new ArgumentException("parameter not match");
+
+                var va1 = variables[0];
+                var va2 = variables[1];
+
+                if (va1 is ConstantData<string> ds1)
+                {
+                    result = va2 switch
+                    {
+                        ConstantData<string> ds2 => new ConstantData<string>(ds1.Value + ds2.Value),
+                        ConstantData<int> di2 => new ConstantData<string>(ds1.Value + di2.Value),
+                        _ => throw new AddException(va1, va2)
+                    };
+                }
+                else if (va1 is ConstantData<int> di1)
+                {
+                    result = va2 switch
+                    {
+                        ConstantData<string> ds2 => new ConstantData<string>(di1.Value + ds2.Value),
+                        ConstantData<int> di2 => new ConstantData<int>(di1.Value + di2.Value),
+                        _ => throw new AddException(va1, va2)
+                    };
+                }
+                else
+                {
+                    throw new AddException(va1, va2);
+                }
+                
                 break;
             }
             default:
