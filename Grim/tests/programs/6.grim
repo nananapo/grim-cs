@@ -1,0 +1,6 @@
+__put(__add("test" "dayo"))
+__put(__add("test" 12345))
+__put(__add(12345 "test"))
+__put(__add(29 31))
+__put(__add(-29 31))
+__put(__add(29 -31))
