@@ -4,9 +4,9 @@ public class FunctionCallToken : ExpressionToken
 {
     public readonly ExpressionToken Function;
 
-    public readonly TermToken Parameters;
+    public readonly List<ExpressionToken> Parameters;
 
-    public FunctionCallToken(ExpressionToken function, TermToken parameters)
+    public FunctionCallToken(ExpressionToken function, List<ExpressionToken> parameters)
     {
         Function = function;
         Parameters = parameters;

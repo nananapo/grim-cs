@@ -14,10 +14,10 @@ public class Tokenizer
         _program = program;
     }
 
-    public TermToken Tokenize()
+    public List<ExpressionToken> Tokenize()
     {
         var (_,term) = ReadBody(0,"end",false);
-        return term;
+        return term.Expressions;
     }
 
     private (int,FunctionToken) ReadFunctionDefinition(int index,FunctionType type)
@@ -151,7 +151,7 @@ public class Tokenizer
                 // 引数を読み込む
                 (index,fct) = ReadBody(index+1,")",true);
                 // 関数呼び出しとして保存
-                expr = new FunctionCallToken(expr,fct);
+                expr = new FunctionCallToken(expr,fct.Expressions);
             }
             
             exprs.Add(expr);
