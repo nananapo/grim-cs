@@ -13,7 +13,7 @@ public class TermToken : ExpressionToken
     public override string ToString()
     {
         return nameof(TermToken) + "<" + 
-               string.Join(",", Expressions.Select(e=>e.ToString()).ToList())
+               string.Join(",", Expressions)
                + ">";
     }
 }

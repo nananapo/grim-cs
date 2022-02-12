@@ -34,7 +34,7 @@ public class FunctionToken : IVariable,ExpressionToken
     public override string ToString()
     {
         return nameof(FunctionToken)
-               + "<" + string.Join(",",Parameters.Select(v=>v.ToString())) +  ">"
+               + "<" + string.Join(",",Parameters) +  ">"
                + "<" + Body + ">";
     }
 }

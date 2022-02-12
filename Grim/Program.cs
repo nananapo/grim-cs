@@ -39,7 +39,7 @@ switch (args[0])
         var tokenizer = new Tokenizer(program);
         var term = tokenizer.Tokenize();
         
-        Console.WriteLine(term);
+        Console.WriteLine(string.Join(",",term));
         
         var vm = new VirtualMachine
         {

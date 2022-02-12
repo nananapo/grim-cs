@@ -14,7 +14,7 @@ public static class Test
         var tokenizer = new Tokenizer(program);
         var term = tokenizer.Tokenize();
         
-        Console.WriteLine("-------------Parse Result-------------\n" + term);
+        Console.WriteLine("-------------Parse Result-------------\n" + string.Join(",",term));
         
         var oIndex = 0;
         var iIndex = 0;

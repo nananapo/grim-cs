@@ -14,6 +14,6 @@ public class FunctionCallToken : ExpressionToken
 
     public override string ToString()
     {
-        return nameof(FunctionCallToken) + $"<{Function}><{Parameters}>";
+        return nameof(FunctionCallToken) + $"<{Function}><{string.Join(",", Parameters)}>";
     }
 }

@@ -381,7 +381,7 @@ public class VirtualMachine
 
     private (int index,IFormula formula) NextFormula(List<ExpressionToken> exprs,int index)
     {
-        Debug("NextFormula : " + exprs,0);
+        Debug("NextFormula : " + string.Join(",", exprs),0);
 
         List<IFormula> terms = new ();
         List<FunctionToken> midOperators = new ();
@@ -407,7 +407,7 @@ public class VirtualMachine
         // 中値演算子の数が合わないならエラー
         if (terms.Count - 1 != midOperators.Count)
         {
-            throw new Exception("中値演算子の数は項の数-1である必要があります");
+            throw new Exception($"中値演算子の数は項の数-1である必要があります\n 項の数 : {terms.Count}\n 中値演算子の数 : {midOperators.Count}");
         }
 
         IFormula result;
