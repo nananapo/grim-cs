@@ -23,7 +23,7 @@ public class AbstractSyntaxTree
     
     public (int index,IFormula formula) NextFormula(List<ExpressionToken> exprs,int index,int depth)
     {
-        Debug($"NextFormula[{index}] : " + string.Join(",", exprs.Skip(index)),depth);
+        Debug($"NextFormula : " + string.Join(",", exprs.Skip(index)),depth);
 
         List<IFormula> terms = new ();
         List<FunctionToken> midOperators = new ();
@@ -102,7 +102,7 @@ public class AbstractSyntaxTree
         
         // 後置演算子を読む
         List<FunctionToken> suffixFuncs;
-        (index,suffixFuncs) = ReadFixFunctions(exprs,index+1,true);
+        (index,suffixFuncs) = ReadFixFunctions(exprs,index+1,false);
 
         // 前置演算子も後置演算子もないならそのまま返す
         if (prefixFuncs.Count == 0 &&
