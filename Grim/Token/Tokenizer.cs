@@ -4,6 +4,7 @@ namespace Grim.Token;
 
 public class Tokenizer
 {
+    public const char NameTypePrefix = ':';
     
     public const string Symbol = "()\" \t\n";
 
@@ -132,6 +133,7 @@ public class Tokenizer
                     break;
                 default:
                     expr = new VariableToken(str);
+                    // TODO 名前型かの確認... でも名前型は評価して作りたいから無理かも
                     break;
             }
 

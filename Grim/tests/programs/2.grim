@@ -1,5 +1,5 @@
-__assign(;print fun(text) __put(text) end)
+__assign(:print fun(text) __put(text) end)
 print("define print")
 
-__assign(;text __input())
+__assign(:text __input())
 print(text)

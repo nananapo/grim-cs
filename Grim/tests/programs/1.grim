@@ -1,2 +1,2 @@
-__assign(;var "test output")
+__assign(:var "test output")
 __put(var)

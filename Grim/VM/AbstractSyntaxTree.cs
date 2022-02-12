@@ -185,8 +185,13 @@ public class AbstractSyntaxTree
                 if(searchResult is Void)
                 {
                     // ;から始まるならば名前型
-                    if (name[0] == ';')
+                    if (name[0] == Tokenizer.NameTypePrefix)
                     {
+                        if (name.Length == 1)
+                        {
+                            throw new Exception(";の後には識別子が必要です");
+                        }
+                        
                         result = new NameType(name.Substring(1));
                         break;
                     }

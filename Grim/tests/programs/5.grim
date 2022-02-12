@@ -1,2 +1,2 @@
-__assign(;getPut fun fun(text) __put(text) end end)
+__assign(:getPut fun fun(text) __put(text) end end)
 getPut()("TEST OUTPUT")
