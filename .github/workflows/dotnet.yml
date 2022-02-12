@@ -22,4 +22,6 @@ jobs:
     - name: Build
       run: dotnet build --no-restore
     - name: Test
-      run: dotnet run test tests
+      run: |
+          cd Grim
+          dotnet run test tests
