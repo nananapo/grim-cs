@@ -42,10 +42,7 @@ switch (args[0])
         
         Console.WriteLine(string.Join(",",term));
         
-        var vm = new VirtualMachine
-        {
-            EnableLogging = true
-        };
+        var vm = new VirtualMachine(enableLogging:true);
         vm.Execute(term);
         break;
     }

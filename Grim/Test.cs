@@ -43,13 +43,14 @@ public static class Test
         
         var oIndex = 0;
         var iIndex = 0;
-        
+
         var vm = new VirtualMachine(str =>
         {
             foreach (var actual in str.Split("\n"))
             {
                 if (oIndex >= outputs.Length)
-                    throw new Exception($"Assertion Failed : put call count\n expected : {outputs.Length}\n value : {actual}");
+                    throw new Exception(
+                        $"Assertion Failed : put call count\n expected : {outputs.Length}\n value : {actual}");
 
                 if (actual != outputs[oIndex])
                     throw new Exception($"Assertion Failed\n expected : {outputs[oIndex]}\n actual : {actual}");
@@ -61,10 +62,7 @@ public static class Test
             if (iIndex >= inputs.Length)
                 throw new Exception($"Assertion Failed : input call count\n expected : {inputs.Length}");
             return inputs[iIndex++];
-        })
-        {
-            EnableLogging = true
-        };
+        },enableLogging:true);
 
         
         Log("-------------Excursion Result-------------");

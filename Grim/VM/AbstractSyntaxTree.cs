@@ -9,8 +9,9 @@ public class AbstractSyntaxTree
 
     public bool EnableLogging = false;
 
-    public AbstractSyntaxTree(RunStack runStack)
+    public AbstractSyntaxTree(RunStack runStack,bool enableLogging = false)
     {
+        EnableLogging = enableLogging;
         _runStack = runStack;
     }
 

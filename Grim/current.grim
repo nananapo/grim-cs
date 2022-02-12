@@ -1,1 +1,2 @@
-﻿__put(opp 1(v)__add(v v)end 1)
+﻿__assign(;mult opp 1(v)__add(v v)end)
+__put(mult 2)

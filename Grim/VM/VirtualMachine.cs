@@ -16,14 +16,13 @@ public class VirtualMachine
 
     private readonly AbstractSyntaxTree _ast;
 
-    public VirtualMachine(Action<string>? outputFunc = null,Func<string?>? inputFunc = null)
+    public VirtualMachine(Action<string>? outputFunc = null,Func<string?>? inputFunc = null,bool enableLogging = false)
     {
         _outputFunction = outputFunc ?? Console.Write;
         _inputFunction = inputFunc ?? Console.ReadLine;
-        _ast = new(_runStack)
-        {
-            EnableLogging = EnableLogging
-        };
+        
+        EnableLogging = enableLogging;
+        _ast = new(_runStack,enableLogging:enableLogging);
     }
 
     private void Debug(string text, int depth)
