@@ -51,7 +51,7 @@ public class VirtualMachine
         IVariable result = Void.Create();
         
         int index = 0;
-        while (index < exprs.Count)
+        while (-1 < index && index < exprs.Count)
         {
             IFormula formula;
             (index,formula) = _ast.NextFormula(exprs,index,0);
@@ -64,7 +64,7 @@ public class VirtualMachine
 
     private IVariable Evaluate(IFormula target, int depth)
     {
-        Debug($"EA {target}",depth);
+        //Debug($"EA {target}",depth);
 
         if (target is UnknownVariable unknown)
         {
@@ -84,7 +84,7 @@ public class VirtualMachine
             ConstantData<int> value => value,
             PrimitiveFunction func => func,
             
-            Formula formula => Evaluate(formula, depth),
+            Formula formula => EvaluateFormula(formula, depth),
             FunctionCall call => Evaluate(call, depth),
             ModifierTerm modifierTerm => EvaluateTerm(modifierTerm,depth),
             FunctionToken functionToken => functionToken,
@@ -94,15 +94,15 @@ public class VirtualMachine
         };
     }
 
-    private IVariable Evaluate(Formula formula,int depth)
+    private IVariable EvaluateFormula(Formula formula,int depth)
     {
         Debug($"EvalF : {formula}",depth);
         
         IVariable result;
         
-        // TODO これはParse段階で除外したい
         if (formula.Terms.Count == 0)
         {
+            // TODO 関数として返す?
             if (formula.MidOperators.Count != 0)
                 throw new Exception("中値演算子が不正な位置にあります");
 

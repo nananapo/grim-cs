@@ -65,3 +65,21 @@ NameTypeにそれが定義されたスコープを保存させて、割り当て
 FunctionTokenをラップして、定義されたスコープを保存するクラスを作り、それを実行させる
 
 PrimitiveFunctionとは???????? Built-inでは???????????
+
+文字列
+
+↓
+
+Token列
+
+↓
+
+ExpressionToken列
+
+↓
+
+IFormula列
+
+↓
+
+IVariable

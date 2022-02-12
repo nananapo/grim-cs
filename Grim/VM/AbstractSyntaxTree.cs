@@ -23,7 +23,7 @@ public class AbstractSyntaxTree
     
     public (int index,IFormula formula) NextFormula(List<ExpressionToken> exprs,int index,int depth)
     {
-        Debug("NextFormula : " + string.Join(",", exprs),depth);
+        Debug($"NextFormula[{index}] : " + string.Join(",", exprs.Skip(index)),depth);
 
         List<IFormula> terms = new ();
         List<FunctionToken> midOperators = new ();
