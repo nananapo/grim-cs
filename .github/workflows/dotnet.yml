@@ -24,4 +24,4 @@ jobs:
     - name: Test
       run: |
           cd Grim
-          dotnet run test tests
+          dotnet run test tests/
