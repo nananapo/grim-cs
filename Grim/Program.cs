@@ -1,4 +1,5 @@
-﻿using Grim;
+﻿using System.Text.RegularExpressions;
+using Grim;
 using Grim.Token;
 using Grim.VM;
 
@@ -50,21 +51,33 @@ switch (args[0])
     }
     case "test":
         
-        if (args.Length != 3)
+        if (args.Length != 2)
         {
-            Console.WriteLine("Usage: test [test folder] [count]");
+            Console.WriteLine("Usage: test [test folder]");
             return;
         }
 
-        var folderPath = args[1];
-        var count = int.Parse(args[2]);
+        var origin = args[1] + Path.DirectorySeparatorChar;
 
-        for (var i = 1; i <= count; i++)
+        var programFolder = origin + "programs" + Path.DirectorySeparatorChar;
+        var outputsFolder = origin + "outputs" + Path.DirectorySeparatorChar;
+        var inputsFolder  = origin + "inputs" + Path.DirectorySeparatorChar;
+
+        foreach (var filename in Directory.GetFiles(programFolder,"*.grim"))
         {
-            Test.Assert($"{folderPath}/programs/{i}.grim",
-                $"{folderPath}/outputs/{i}.txt",
-                $"{folderPath}/inputs/{i}.txt");
+            var match = Regex.Match(filename.Substring(programFolder.Length-1),"[^/](.*?)\\.grim$");
+            
+            if (match.Groups.Count < 2)
+            {
+                continue;
+            }
+
+            var name = match.Groups.Values.ToList()[1].Captures.ToList()[0].Value;
+            
+            Test.Assert($"{programFolder}{name}.grim",
+                $"{outputsFolder}{name}.txt",
+                $"{inputsFolder}{name}.txt");
         }
-        
+
         break;
 }

@@ -20,7 +20,10 @@ public class VirtualMachine
     {
         _outputFunction = outputFunc ?? Console.Write;
         _inputFunction = inputFunc ?? Console.ReadLine;
-        _ast = new(_runStack);
+        _ast = new(_runStack)
+        {
+            EnableLogging = EnableLogging
+        };
     }
 
     private void Debug(string text, int depth)

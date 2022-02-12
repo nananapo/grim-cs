@@ -5,16 +5,41 @@ using VM;
 
 public static class Test
 {
-    public static void Assert(string programFilePath,string outputFilePath,string? inputFilePath = null)
+    private static void Log(string text)
+    {
+        Console.WriteLine($"[Test] {text}");
+    }
+    
+    public static void Assert(string programFilePath,string outputFilePath,string inputFilePath)
     {
         var program = string.Join("\n",File.ReadAllLines(programFilePath));
-        var outputs = File.ReadAllLines(outputFilePath);
-        var inputs = inputFilePath != null ? File.ReadAllLines(inputFilePath) : Array.Empty<string>();
+
+        string[] inputs;
+        if (File.Exists(inputFilePath))
+        {
+            inputs = File.ReadAllLines(inputFilePath);
+        }
+        else
+        {
+            inputs = Array.Empty<string>();
+            Log($"input file for {programFilePath} is not found.");
+        }
+        
+        string[] outputs;
+        if (File.Exists(outputFilePath))
+        {
+            outputs = File.ReadAllLines(outputFilePath);
+        }
+        else
+        {
+            outputs = Array.Empty<string>();
+            Log($"output file for {programFilePath} is not found.");
+        }
 
         var tokenizer = new Tokenizer(program);
         var term = tokenizer.Tokenize();
         
-        Console.WriteLine("-------------Parse Result-------------\n" + string.Join(",",term));
+        Log("-------------Parse Result-------------\n" + string.Join(",",term));
         
         var oIndex = 0;
         var iIndex = 0;
@@ -42,7 +67,7 @@ public static class Test
         };
 
         
-        Console.WriteLine("-------------Excursion Result-------------");
+        Log("-------------Excursion Result-------------");
         vm.Execute(term);
         
         if(oIndex != outputs.Length)
@@ -51,6 +76,6 @@ public static class Test
         if(iIndex != inputs.Length)
             throw new Exception($"Assertion Failed : input call count\n expected : {inputs.Length}\n actual : {iIndex}");
         
-        Console.WriteLine($"\nAssertion Succeeded {programFilePath}\n");
+        Log($"Assertion Succeeded {programFilePath}\n");
     }
 }

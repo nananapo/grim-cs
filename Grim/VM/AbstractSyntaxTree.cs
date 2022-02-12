@@ -7,6 +7,8 @@ public class AbstractSyntaxTree
 
     private readonly RunStack _runStack;
 
+    public bool EnableLogging = false;
+
     public AbstractSyntaxTree(RunStack runStack)
     {
         _runStack = runStack;
@@ -14,6 +16,8 @@ public class AbstractSyntaxTree
 
     private void Debug(string text, int depth)
     {
+        if (!EnableLogging) return;
+
         var spaces = " ";
         for (int i = 0; i < depth; i++)
             spaces += "  ";
