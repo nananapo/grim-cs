@@ -1,9 +1,11 @@
-﻿__assign(print fun(text) __put(text) end)
-__assign(test fun(a) fun a end end)
-__assign(a "this is dynamic scope")
+﻿__assign(;print fun(text) __put(text) end)
+__assign(;test fun(a) fun a end end)
+__assign(;a "this is dynamic scope")
 print(test("test")())
 
-__assign(void fun end)
+__assign(;void fun end)
 void()
 
-__put("ponpon")
+__put("ponpon\n")
+
+;kanapo

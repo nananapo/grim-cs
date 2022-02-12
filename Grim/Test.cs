@@ -14,7 +14,7 @@ public static class Test
         var tokenizer = new Tokenizer(program);
         var term = tokenizer.Tokenize();
         
-        Console.WriteLine("Parse Result\n" + term);
+        Console.WriteLine("-------------Parse Result-------------\n" + term);
         
         var oIndex = 0;
         var iIndex = 0;
@@ -41,6 +41,8 @@ public static class Test
             EnableLogging = true
         };
 
+        
+        Console.WriteLine("-------------Excursion Result-------------");
         vm.Execute(term);
         
         if(oIndex != outputs.Length)

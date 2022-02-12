@@ -8,9 +8,28 @@ if(args.Length == 0)
 switch (args[0])
 {
     case "run":
+    {
         if (args.Length != 2)
         {
             Console.WriteLine("Usage: run [program file path]");
+            return;
+        }
+        
+        var fileName = args[1];
+        var program = string.Join("\n",File.ReadAllLines(fileName));
+        
+        var tokenizer = new Tokenizer(program);
+        var term = tokenizer.Tokenize();
+
+        var vm = new VirtualMachine();
+        vm.Execute(term);
+        break;
+    }
+    case "debug":
+    {
+        if (args.Length != 2)
+        {
+            Console.WriteLine("Usage: debug [program file path]");
             return;
         }
         
@@ -28,6 +47,7 @@ switch (args[0])
         };
         vm.Execute(term);
         break;
+    }
     case "test":
         
         if (args.Length != 3)

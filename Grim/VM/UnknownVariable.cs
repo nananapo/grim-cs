@@ -1,6 +1,6 @@
 ﻿namespace Grim.VM;
 
-public sealed class UnknownVariable : IVariable
+public sealed class UnknownVariable : IFormula
 {
     public readonly string Name;
     

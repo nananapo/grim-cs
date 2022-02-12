@@ -44,7 +44,9 @@ public class VirtualMachine
             }
         }
 
-        var result = Evaluate(ReadFormula(seed),depth+1);
+        var formula = ReadFormula(seed);
+        //Console.WriteLine($"FORMULA : {formula}");
+        var result = Evaluate(formula,depth+1);
         
         _runStack.Pop();
         return result;
@@ -53,6 +55,18 @@ public class VirtualMachine
     private IVariable Evaluate(IFormula target, int depth)
     {
         //Debug($"EA {target}",depth);
+
+        if (target is UnknownVariable unknown)
+        {
+            var result =_runStack.GetVariable(unknown.Name);
+            if (result is Void)
+            {
+                // 不明ならエラー
+                throw new Exception($"\"{unknown.Name}\"を解決できませんでした");
+            }
+            return result;
+        }
+        
         return target switch
         {
             // 定数
@@ -94,7 +108,7 @@ public class VirtualMachine
             // 式だけが連続する場合、最後のTermを残して抜ける
             if (ops.Count == 0)
             {
-                for (int i = 0; i < terms.Count-1; i++)
+                while(terms.Count > 1)
                 {
                     Evaluate(terms[0], depth + 1);
                     terms.RemoveAt(0);
@@ -143,15 +157,10 @@ public class VirtualMachine
         {
             result = CallFunction(functionToken,funcCall.Parameters,depth+1);
         }
+        // builtin
         else if (function is PrimitiveFunction primitive)
         {
             result = EvaluatePrimitiveFunction(primitive, funcCall.Parameters, depth + 1);
-        }
-        // 名前なら名前で呼ぶ
-        // TODO ここは違う
-        else if (function is NameType nameType)
-        {
-            result = CallFunctionWithName(nameType.Name, funcCall.Parameters, depth+1);
         }
         // それ以外ならエラー
         else
@@ -185,17 +194,6 @@ public class VirtualMachine
         return variable;
     }
 
-    private IVariable CallFunctionWithName(string name,List<IFormula> parameters,int depth)
-    {
-        // 関数を見つけた
-        if (_runStack.TryGetVariable(name,out FunctionToken function))
-        {
-            return CallFunction(function, parameters, depth);
-        }
-        
-        throw new Exception($"Function {name} not found");
-    }
-    
     /// <summary>
     /// FunctionTokenを評価する
     /// </summary>
@@ -256,6 +254,8 @@ public class VirtualMachine
                 var name = nameType.Name;
                 var value = variables[1];
                 _runStack.Assign(name, value);
+                
+                //Console.WriteLine($"ASSIGNED {name} : {value}");
                 
                 result = value;
                 break;
@@ -403,17 +403,22 @@ public class VirtualMachine
                         break;
                     }
                     
+                    // builtin
+                    if (PrimitiveFunction.TryParse(name, out var primitiveFunction))
+                    {
+                        result = primitiveFunction;
+                        break;
+                    }
+                    
                     // 数字の可能性
                     if(int.TryParse(name,out int value))
                     {
                         result = new ConstantData<int>(value);
                         break;
                     }
-                    
-                    // TODO builtin
 
-                    // 不明ならエラー
-                    throw new Exception($"\"{name}\"を解決できませんでした");
+                    result = new UnknownVariable(name);
+                    break;
                 }
 
                 // 変数が関数なら、関数をそのまま渡す

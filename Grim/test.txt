@@ -37,3 +37,43 @@ TermToken<
     TermToken<>
     >,TermToken<>> ←()()が処理できてない : できました！
     
+
+Parse Result
+TermToken<
+    FunctionCallToken<VariableToken<__assign>><
+        TermToken<  VariableToken<;print>,
+            FunctionToken<VariableToken<text>><
+                TermToken<  FunctionCallToken<VariableToken<__put>><
+                                TermToken<VariableToken<text>>
+                            >
+                         >
+            >
+        >
+    >,
+    FunctionCallToken<VariableToken<print>><
+        TermToken<define print>
+    >,
+    FunctionCallToken<VariableToken<__assign>><
+        TermToken<  VariableToken<;text>,
+                    FunctionCallToken<VariableToken<__input>><TermToken<>>>>
+    ,
+    FunctionCallToken<VariableToken<print>><
+        TermToken<VariableToken<text>>
+    >
+>
+
+FORMULA : 
+Formula<T:
+    FunctionCall<PrimitiveFunction<Assign>><NameType<print>,
+                                            FunctionToken<VariableToken<text>><TermToken<
+                                                FunctionCallToken<VariableToken<__put>><
+                                                    TermToken<VariableToken<text>>
+                                                >
+                                            >>>,
+    FunctionCall<UnknownVariable<print>><define print>,
+    FunctionCall<PrimitiveFunction<Assign>><
+        NameType<text>,
+        FunctionCall<PrimitiveFunction<Input>><>
+    >,
+    FunctionCall<UnknownVariable<print>><UnknownVariable<text>>
+    ><MO:>
