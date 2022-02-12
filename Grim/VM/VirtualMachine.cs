@@ -27,11 +27,11 @@ public class VirtualMachine
     {
         if (!EnableLogging) return;
         
-        var spaces = " ";
+        var spaces = "";
         for (int i = 0; i < depth; i++)
             spaces += "  ";
         
-        Console.WriteLine(depth + spaces + text);
+        Console.WriteLine($"[VM] {depth} {spaces}{text}");
     }
 
     public IVariable Execute(List<ExpressionToken> exprs,Dictionary<string,IVariable>? variables = null,int depth = 0)
@@ -54,7 +54,7 @@ public class VirtualMachine
         while (index < exprs.Count)
         {
             IFormula formula;
-            (index,formula) = _ast.NextFormula(exprs,index);
+            (index,formula) = _ast.NextFormula(exprs,index,0);
             result = Evaluate(formula,depth+1);
         }
         

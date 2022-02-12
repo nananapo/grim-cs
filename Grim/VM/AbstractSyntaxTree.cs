@@ -18,12 +18,12 @@ public class AbstractSyntaxTree
         for (int i = 0; i < depth; i++)
             spaces += "  ";
         
-        Console.WriteLine(depth + spaces + text);
+        Console.WriteLine($"[AST] {depth} {spaces}{text}");
     }
     
-    public (int index,IFormula formula) NextFormula(List<ExpressionToken> exprs,int index)
+    public (int index,IFormula formula) NextFormula(List<ExpressionToken> exprs,int index,int depth)
     {
-        Debug("NextFormula : " + string.Join(",", exprs),0);
+        Debug("NextFormula : " + string.Join(",", exprs),depth);
 
         List<IFormula> terms = new ();
         List<FunctionToken> midOperators = new ();
@@ -32,7 +32,7 @@ public class AbstractSyntaxTree
         {
             // Termを1つ読む
             IFormula term;
-            (index, term) = NextTerm(exprs, index);
+            (index, term) = NextTerm(exprs, index,depth+1);
             terms.Add(term);
             
             // 中値演算子を1つ読む
@@ -64,7 +64,7 @@ public class AbstractSyntaxTree
             result = new Formula(terms,midOperators);
         }
 
-        Debug("EndNextFormula : " + result,0);
+        Debug($"-> {result}",depth);
 
         return (index, result);
     }
@@ -85,7 +85,7 @@ public class AbstractSyntaxTree
         return (true,index+1,function);
     }
 
-    private (int index,IFormula term) NextTerm(List<ExpressionToken> exprs,int index)
+    private (int index,IFormula term) NextTerm(List<ExpressionToken> exprs,int index,int depth)
     {
         List<FunctionToken> prefixFuncs;
         (index,prefixFuncs) = ReadFixFunctions(exprs,index,true);
@@ -98,7 +98,7 @@ public class AbstractSyntaxTree
         }
         
         // 本体を読む
-        IFormula midTerm = ReadFormula(exprs[index]);
+        IFormula midTerm = ReadFormula(exprs[index],depth+1);
         
         // 後置演算子を読む
         List<FunctionToken> suffixFuncs;
@@ -114,16 +114,17 @@ public class AbstractSyntaxTree
         // 演算子で修飾して返す
         return (index,new ModifierTerm(prefixFuncs,midTerm,suffixFuncs));
     }
-    
+
     /// <summary>
     /// 式を読む
     /// </summary>
     /// <param name="expr"></param>
+    /// <param name="depth"></param>
     /// <returns></returns>
-    private IFormula ReadFormula(ExpressionToken expr)
+    private IFormula ReadFormula(ExpressionToken expr,int depth)
     {
 
-        Debug("ReadFormula : " + expr,0);
+        Debug($"ReadFormula : {expr}",depth);
         
         IFormula result;
         
@@ -142,7 +143,7 @@ public class AbstractSyntaxTree
                 while (-1 < index && index < term.Expressions.Count)
                 {
                     IFormula formula;
-                    (index,formula) = NextFormula(term.Expressions,index);
+                    (index,formula) = NextFormula(term.Expressions,index,depth+1);
                     formulas.Add(formula);
                 }
                 result = new Formula(formulas,new List<FunctionToken>());
@@ -156,12 +157,12 @@ public class AbstractSyntaxTree
                 while(-1 < index && index < funcCall.Parameters.Count)
                 {
                     IFormula formula;
-                    (index,formula) = NextFormula(funcCall.Parameters,index);
+                    (index,formula) = NextFormula(funcCall.Parameters,index,depth+1);
                     parameters.Add(formula);
                 }
 
                 // 関数本体を取り出す
-                IFormula function = ReadFormula(funcCall.Function);
+                IFormula function = ReadFormula(funcCall.Function,depth+1);
                 
                 // 関数呼び出しとして終了
                 result = new FunctionCall(function,parameters);
@@ -216,7 +217,7 @@ public class AbstractSyntaxTree
                 throw new NotImplementedException(expr.ToString());
         }
 
-        Debug("EndReadFormula : " + result,0);
+        Debug($"-> {result}",depth);
 
         return result;
     }
