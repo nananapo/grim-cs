@@ -160,7 +160,7 @@ public class VirtualMachine
         // builtin
         else if (function is PrimitiveFunction primitive)
         {
-            result = EvaluatePrimitiveFunction(primitive, funcCall.Parameters, depth + 1);
+            result = CallPrimitiveFunction(primitive, funcCall.Parameters, depth + 1);
         }
         // それ以外ならエラー
         else
@@ -180,22 +180,69 @@ public class VirtualMachine
     { 
         Debug($"EvalMT : {term}",depth);
 
-        IVariable variable = Evaluate(term.Term,depth+1);
+        // 中心を評価
+        var result = Evaluate(term.Term,depth+1);
         
-        
-        
-        // TODO prefixとsuffixを処理
-        // TODO 関数なら合成
-        
-        // TODO ビルトイン関数の合成は？
-        // TODO Unknownでいいの？ 名前は？
+        // prefixとsuffixを処理
+        int pIndex = 0;
+        int sIndex = 0;
+        while (pIndex < term.PrefixFuncs.Count && sIndex < term.SuffixFuncs.Count)
+        {
+            var pf = term.PrefixFuncs[pIndex];
+            var sf = term.SuffixFuncs[sIndex];
+            
+            // prefixのほうが優先度が高い
+            if (pf.Priority > sf.Priority)
+            {
+                result = CallFunction(pf, new List<IFormula> {result}, depth + 1);
+                pIndex++;
+                continue;
+            }
+            
+            // suffixのほうが優先度が高い
+            if(pf.Priority < sf.Priority)
+            {
+                result = CallFunction(sf, new List<IFormula> {result}, depth + 1);
+                sIndex++;
+                continue;
+            }
+            
+            // ↓優先度が同じ
+            // 両方右結合なら後置
+            if (pf.IsLeftAssociative == sf.IsLeftAssociative && !pf.IsLeftAssociative)
+            {
+                result = CallFunction(sf, new List<IFormula> {result}, depth + 1);
+                sIndex++;
+            }
+            // 両方左結合か、結合が違うなら前置
+            else
+            {
+                result = CallFunction(pf, new List<IFormula> {result}, depth + 1);
+                pIndex++;
+            }
+        }
 
-        Debug($"-> {variable}",depth);
-        return variable;
+        // prefixが余ってるなら処理
+        while (pIndex < term.PrefixFuncs.Count)
+        {
+            result = CallFunction(term.PrefixFuncs[pIndex], new List<IFormula> {result}, depth + 1);
+            pIndex++;
+        }
+
+        // suffixが余ってるなら処理
+        while (sIndex < term.SuffixFuncs.Count)
+        {
+            result = CallFunction(term.SuffixFuncs[sIndex], new List<IFormula> {result}, depth + 1);
+            sIndex++;
+        }
+        
+        Debug($"-> {result}",depth);
+        return result;
     }
 
     /// <summary>
     /// FunctionTokenを評価する
+    /// TODO 関数なら合成
     /// </summary>
     /// <param name="function"></param>
     /// <param name="formulas"></param>
@@ -228,8 +275,16 @@ public class VirtualMachine
         return result;
     }
 
-    //TODO 名前と名前型は違う→Evaluateでおかしくなる
-    private IVariable EvaluatePrimitiveFunction(PrimitiveFunction primitive, List<IFormula> parameters,int depth)
+    /// <summary>
+    /// ビルトイン関数を呼ぶ
+    /// </summary>
+    /// <param name="primitive"></param>
+    /// <param name="parameters"></param>
+    /// <param name="depth"></param>
+    /// <returns></returns>
+    /// <exception cref="ArgumentException"></exception>
+    /// <exception cref="NotImplementedException"></exception>
+    private IVariable CallPrimitiveFunction(PrimitiveFunction primitive, List<IFormula> parameters,int depth)
     {        
         Debug($"EvalP : {primitive}",depth);
 

@@ -13,22 +13,22 @@ public class FunctionToken : IVariable,ExpressionToken
 
     public readonly int Priority;
 
+    public readonly bool IsLeftAssociative;
+
     public FunctionToken(FunctionType type,List<VariableToken> parameters,ExpressionToken body,int priority)
     {
         Type = type;
         Parameters = parameters;
         Body = body;
-        Priority = priority;
-        Check();
-    }
+        Priority = Math.Abs(priority);
+        IsLeftAssociative = priority < 0;
 
-    private void Check()
-    {
         if((Type == FunctionType.Prefix || Type == FunctionType.Suffix) && Parameters.Count != 1)
             throw new Exception("prefix or suffix operator function must have one parameter.");
         
         if(Type == FunctionType.Mid && Parameters.Count != 2)
             throw new Exception("mid operator function must have two parameter.");
+
     }
 
     public override string ToString()
