@@ -14,6 +14,6 @@ public class FunctionCall : IFormula
 
     public override string ToString()
     {
-        return nameof(FunctionCall) + $"<{Lambda}><{string.Join(",",Parameters.Select(v=>v.ToString()))}>";
+        return nameof(FunctionCall) + $"<{Lambda}><{string.Join(",",Parameters)}>";
     }
 }

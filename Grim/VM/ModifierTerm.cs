@@ -17,8 +17,8 @@ public class ModifierTerm : IFormula
     
     public override string ToString()
     {
-        return $"MTerm<P:{string.Join(",",PrefixFuncs.Select(v=>v.ToString()))}>" +
+        return $"MTerm<P:{string.Join(",",PrefixFuncs)}>" +
                $"<T:{Term}>" +
-               $"<S:{string.Join(",",SuffixFuncs.Select(v=>v.ToString()))}>";
+               $"<S:{string.Join(",",SuffixFuncs)}>";
     }
 }

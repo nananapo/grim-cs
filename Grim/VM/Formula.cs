@@ -2,6 +2,7 @@ using Grim.Token;
 
 namespace Grim.VM;
 
+// TODO 名前を変える
 public class Formula : IFormula
 {
     public readonly List<IFormula> Terms;
@@ -16,6 +17,6 @@ public class Formula : IFormula
 
     public override string ToString()
     {
-        return nameof(Formula) + $"<T:{string.Join(",",Terms.Select(v=>v.ToString()))}><MO:{string.Join(",",MidOperators.Select(v=>v.ToString()))}>";
+        return nameof(Formula) + $"<T:{string.Join(",",Terms)}><MO:{string.Join(",",MidOperators)}>";
     }
 }

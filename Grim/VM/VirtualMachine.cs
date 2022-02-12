@@ -14,24 +14,30 @@ public class VirtualMachine
 
     private readonly Func<string?> _inputFunction;
 
+    private readonly AbstractSyntaxTree _ast;
+
     public VirtualMachine(Action<string>? outputFunc = null,Func<string?>? inputFunc = null)
     {
         _outputFunction = outputFunc ?? Console.Write;
         _inputFunction = inputFunc ?? Console.ReadLine;
+        _ast = new(_runStack)
+        {
+            EnableLogging = EnableLogging
+        };
     }
 
     private void Debug(string text, int depth)
     {
         if (!EnableLogging) return;
         
-        var spaces = " ";
+        var spaces = "";
         for (int i = 0; i < depth; i++)
             spaces += "  ";
         
-        Console.WriteLine(depth + spaces + text);
+        Console.WriteLine($"[VM]  {depth} {spaces}{text}");
     }
 
-    public IVariable Execute(ExpressionToken seed,Dictionary<string,IVariable>? variables = null,int depth = 0)
+    public IVariable Execute(List<ExpressionToken> exprs,Dictionary<string,IVariable>? variables = null,int depth = 0)
     {
         _runStack.Push();
 
@@ -45,9 +51,15 @@ public class VirtualMachine
             }
         }
 
-        var formula = ReadFormula(seed);
-        //Console.WriteLine($"FORMULA : {formula}");
-        var result = Evaluate(formula,depth+1);
+        IVariable result = Void.Create();
+        
+        int index = 0;
+        while (-1 < index && index < exprs.Count)
+        {
+            IFormula formula;
+            (index,formula) = _ast.NextFormula(exprs,index,0);
+            result = Evaluate(formula,depth+1);
+        }
         
         _runStack.Pop();
         return result;
@@ -75,7 +87,7 @@ public class VirtualMachine
             ConstantData<int> value => value,
             PrimitiveFunction func => func,
             
-            Formula formula => Evaluate(formula, depth),
+            Formula formula => EvaluateFormula(formula, depth),
             FunctionCall call => Evaluate(call, depth),
             ModifierTerm modifierTerm => EvaluateTerm(modifierTerm,depth),
             FunctionToken functionToken => functionToken,
@@ -85,15 +97,15 @@ public class VirtualMachine
         };
     }
 
-    private IVariable Evaluate(Formula formula,int depth)
+    private IVariable EvaluateFormula(Formula formula,int depth)
     {
         Debug($"EvalF : {formula}",depth);
         
         IVariable result;
         
-        // TODO これはParse段階で除外したい
         if (formula.Terms.Count == 0)
         {
+            // TODO 関数として返す?
             if (formula.MidOperators.Count != 0)
                 throw new Exception("中値演算子が不正な位置にあります");
 
@@ -269,7 +281,7 @@ public class VirtualMachine
         }
 
         // 関数を実行
-        var result = Execute(function.Body,dict,depth);
+        var result = Execute(new List<ExpressionToken>{function.Body},dict,depth);
         
         //結果を返す
         Debug($"-> {result}",depth);
@@ -371,231 +383,5 @@ public class VirtualMachine
         
         Debug($"-> {result}",depth);
         return result;
-    }
-
-    private (int index,IFormula formula) NextFormula(TermToken seed,int index)
-    {
-        var exprs = seed.Expressions;
-
-        List<IFormula> terms = new ();
-        List<FunctionToken> midOperators = new ();
-
-        while(-1 < index && index < exprs.Count)
-        {
-            // Termを1つ読む
-            IFormula term;
-            (index, term) = NextTerm(seed, index);
-            terms.Add(term);
-            
-            // TODO これ、Termが読めないことはあるのか？
-            
-            // 中値演算子を1つ読む
-            bool isMidOperator;
-            FunctionToken midOp;
-            (isMidOperator,index,midOp) = NextMidOperator(seed,index);
-            
-            if(!isMidOperator)
-                break;
-            
-            midOperators.Add(midOp);
-        } 
-        
-        // 中値演算子の数が合わないならエラー
-        if (terms.Count - 1 != midOperators.Count)
-        {
-            throw new Exception("中値演算子の数は項の数-1である必要があります");
-        }
-
-        // Termが一つならそれを返す
-        if (midOperators.Count == 0 && terms.Count == 1)
-        {
-            return (index, terms[0]);
-        }
-        
-        return (index,new Formula(terms,midOperators));
-    }
-
-    private (bool isMidOperator,int index,FunctionToken midOperator) NextMidOperator(TermToken term,int index)
-    {
-        if(index < 0 || 
-           index >= term.Expressions.Count ||
-           term.Expressions[index] is not VariableToken variable) // TODO 直接な関数定義は使えないの？
-            return (false,index,null)!;
-
-        var searchResult = _runStack.GetVariable(variable.Name);
-        
-        if(searchResult is not FunctionToken function ||
-           function.Type != FunctionType.Mid)
-            return (false,index,null)!;
-        
-        return (true,index+1,function);
-    }
-
-    private IFormula ReadFormula(ExpressionToken expr)
-    {
-        IFormula result;
-        
-        switch(expr)
-        {
-            case ConstantData<string> value:
-                result = value;
-                break;
-            case ConstantData<int> value:
-                result = value;
-                break;
-            case TermToken term:
-            {
-                int index = 0;
-                var formulas = new List<IFormula>();
-                while (-1 < index && index < term.Expressions.Count)
-                {
-                    IFormula formula;
-                    (index,formula) = NextFormula(term,index);
-                    formulas.Add(formula);
-                }
-                result = new Formula(formulas,new List<FunctionToken>());
-                break;
-            }
-            case FunctionCallToken funcCall:
-            {
-                // 引数を取り出す   
-                int index = 0;
-                List<IFormula> parameters = new();
-                while(-1 < index && index < funcCall.Parameters.Expressions.Count)
-                {
-                    IFormula formula;
-                    (index,formula) = NextFormula(funcCall.Parameters,index);
-                    parameters.Add(formula);
-                }
-
-                // 関数本体を取り出す
-                IFormula function = ReadFormula(funcCall.Function);
-                
-                // 関数呼び出しとして終了
-                result = new FunctionCall(function,parameters);
-                break;
-            }
-            case FunctionToken func:
-                result = func;
-                break;
-            case VariableToken variable:
-            {
-                var name = variable.Name;
-                var searchResult = _runStack.GetVariable(name);
-
-                if(searchResult is Void)
-                {
-                    // ;から始まるならば名前型
-                    if (name[0] == ';')
-                    {
-                        result = new NameType(name.Substring(1));
-                        break;
-                    }
-                    
-                    // builtin
-                    if (PrimitiveFunction.TryParse(name, out var primitiveFunction))
-                    {
-                        result = primitiveFunction;
-                        break;
-                    }
-                    
-                    // 数字の可能性
-                    if(int.TryParse(name,out int value))
-                    {
-                        result = new ConstantData<int>(value);
-                        break;
-                    }
-
-                    result = new UnknownVariable(name);
-                    break;
-                }
-
-                // 変数が関数なら、関数をそのまま渡す
-                if(searchResult is FunctionToken func)
-                {
-                    result = func;
-                    break;
-                }
-
-                result = searchResult;
-                break;
-            }
-            default:
-                throw new NotImplementedException(expr.ToString());
-        }
-
-        return result;
-    }
-
-    private (int index,IFormula term) NextTerm(TermToken target,int index)
-    {
-        var exprs = target.Expressions;
-
-        List<FunctionToken> prefixFuncs;
-        (index,prefixFuncs) = ReadFixFunctions(target,index,true);
-
-        // 前置演算子だけで終了した
-        if(index == -1 && prefixFuncs.Count != 0)
-        {
-            //TODO エラーではなくて、関数を合成する？
-            throw new Exception($"There are {prefixFuncs.Count} prefix operators, but formula is not found.");
-        }
-        
-        // 本体を読む
-        IFormula midTerm = ReadFormula(exprs[index]);
-        
-        // 後置演算子を読む
-        List<FunctionToken> suffixFuncs;
-        (index,suffixFuncs) = ReadFixFunctions(target,index+1,true);
-
-        // 前置演算子も後置演算子もないならそのまま返す
-        if (prefixFuncs.Count == 0 &&
-            suffixFuncs.Count == 0)
-        {
-            return (index, midTerm);
-        }
-        
-        // 演算子で修飾して返す
-        return (index,new ModifierTerm(prefixFuncs,midTerm,suffixFuncs));
-    }
-
-    /// <summary>
-    /// 前置演算子か後置演算子の列を
-    /// </summary>
-    /// <param name="term"></param>
-    /// <param name="index"></param>
-    /// <param name="isPrefixMode"></param>
-    /// <returns></returns>
-    private (int index, List<FunctionToken> functions) ReadFixFunctions(TermToken term,int index,bool isPrefixMode)
-    {
-        var functions = new List<FunctionToken>();
-        
-        var exprs = term.Expressions;
-        while(index < exprs.Count)
-        {
-            var expr = exprs[index];
-            if(expr is not VariableToken variable)
-            {
-                return (index,functions);
-            }
-
-            var searchResult = _runStack.GetVariable(variable.Name);
-
-            if(searchResult is not FunctionToken func)
-            {
-                return (index,functions);
-            }
-
-            if(!(func.Type == FunctionType.Prefix && isPrefixMode) 
-               && !(func.Type == FunctionType.Suffix && !isPrefixMode))
-            {
-                return (index,functions);
-            }
-
-            functions.Add(func);
-            index++;
-        }
-
-        return (-1,functions);
     }
 }
