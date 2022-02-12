@@ -2,6 +2,9 @@
 
 public sealed class NameType : IVariable
 {
+
+    //TODO 定義場所
+    
     public readonly string Name;
     
     public NameType(string name)
@@ -11,6 +14,6 @@ public sealed class NameType : IVariable
 
     public override string ToString()
     {
-        return typeof(NameType) + $"<{Name}>";
+        return nameof(NameType) + $"<{Name}>";
     }
 }

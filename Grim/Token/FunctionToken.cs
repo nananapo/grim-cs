@@ -9,11 +9,11 @@ public class FunctionToken : IVariable,ExpressionToken
 
     public readonly List<VariableToken> Parameters;
 
-    public readonly TermToken Body;
+    public readonly ExpressionToken Body;
 
     public readonly int Priority;
 
-    public FunctionToken(FunctionType type,List<VariableToken> parameters,TermToken body,int priority)
+    public FunctionToken(FunctionType type,List<VariableToken> parameters,ExpressionToken body,int priority)
     {
         Type = type;
         Parameters = parameters;

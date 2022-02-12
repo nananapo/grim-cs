@@ -2,7 +2,6 @@ namespace Grim.VM;
 
 public class FunctionCall : IFormula
 {
-
     public readonly IFormula Lambda;
 
     public readonly List<IFormula> Parameters;

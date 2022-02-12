@@ -30,10 +30,12 @@ public class VirtualMachine
         Console.WriteLine(depth + spaces + text);
     }
 
-    public IVariable Execute(TermToken seed,Dictionary<string,IVariable>? variables = null,int depth = 0)
+    public IVariable Execute(ExpressionToken seed,Dictionary<string,IVariable>? variables = null,int depth = 0)
     {
         _runStack.Push();
 
+        // 引数を環境に入れる
+        // TODO 静的スコープ
         if (variables != null)
         {
             foreach (var (name,variable) in variables)
@@ -41,22 +43,11 @@ public class VirtualMachine
                 _runStack.AssignHere(name,variable);
             }
         }
-        
-        var exprs = seed.Expressions;
-        int index = 0;
 
-        // TODO return判定
-        IVariable returnVariable = Void.Create();
-        while(-1 < index && index < exprs.Count)
-        {
-            IFormula formula;
-            (index,formula) = NextFormula(seed,index);
-            returnVariable = Evaluate(formula,depth);
-            //Debug("Result " + returnVariable.GetType() + " : " + returnVariable,depth);
-        }
+        var result = Evaluate(ReadFormula(seed),depth+1);
         
         _runStack.Pop();
-        return returnVariable;
+        return result;
     }
 
     private IVariable Evaluate(IFormula target, int depth)
@@ -67,13 +58,14 @@ public class VirtualMachine
             // 定数
             ConstantData<string> value => value,
             ConstantData<int> value => value,
+            PrimitiveFunction func => func,
             
             Formula formula => Evaluate(formula, depth),
             FunctionCall call => Evaluate(call, depth),
             ModifierTerm modifierTerm => EvaluateTerm(modifierTerm,depth),
             FunctionToken functionToken => functionToken,
+            NameType nameType => nameType,
             Void v => v,
-            IVariable variable => variable,
             _ => throw new NotImplementedException(target.GetType().FullName)
         };
     }
@@ -151,7 +143,12 @@ public class VirtualMachine
         {
             result = CallFunction(functionToken,funcCall.Parameters,depth+1);
         }
+        else if (function is PrimitiveFunction primitive)
+        {
+            result = EvaluatePrimitiveFunction(primitive, funcCall.Parameters, depth + 1);
+        }
         // 名前なら名前で呼ぶ
+        // TODO ここは違う
         else if (function is NameType nameType)
         {
             result = CallFunctionWithName(nameType.Name, funcCall.Parameters, depth+1);
@@ -195,31 +192,8 @@ public class VirtualMachine
         {
             return CallFunction(function, parameters, depth);
         }
-                    
-        // builtin
-        IVariable variable;
-        switch (name)
-        {
-            case "__let":
-                variable = EvaluatePrimitiveFunction(PrimitiveFunctionType.Let, parameters,depth);
-                break;
-            case "__assign":
-                variable = EvaluatePrimitiveFunction(PrimitiveFunctionType.Assign, parameters,depth);
-                break;
-            case "__put":
-                variable = EvaluatePrimitiveFunction(PrimitiveFunctionType.Put, parameters,depth);
-                break;
-            case "__input":
-                variable = EvaluatePrimitiveFunction(PrimitiveFunctionType.Input, parameters,depth);
-                break;
-            case "return":
-                throw new NotImplementedException();
-                break;
-            default:
-                throw new Exception($"Function {name} not found");
-        }
-
-        return variable;
+        
+        throw new Exception($"Function {name} not found");
     }
     
     /// <summary>
@@ -256,17 +230,18 @@ public class VirtualMachine
         return result;
     }
 
-    private IVariable EvaluatePrimitiveFunction(PrimitiveFunctionType type, List<IFormula> parameters,int depth)
+    //TODO 名前と名前型は違う→Evaluateでおかしくなる
+    private IVariable EvaluatePrimitiveFunction(PrimitiveFunction primitive, List<IFormula> parameters,int depth)
     {        
-        Debug($"EvalP : {type}",depth);
+        Debug($"EvalP : {primitive}",depth);
 
         // とりあえず評価しておく
         var variables = parameters.Select(f=>Evaluate(f,depth+1)).ToList();
 
         IVariable result;
-        switch (type)
+        switch (primitive.Function)
         {
-            case PrimitiveFunctionType.Assign:
+            case PrimitiveFunction.Type.Assign:
             {
                 if (variables.Count != 2)
                 {
@@ -285,14 +260,14 @@ public class VirtualMachine
                 result = value;
                 break;
             }
-            case PrimitiveFunctionType.Put:
+            case PrimitiveFunction.Type.Put:
             {
                 var str = string.Join(" ", variables);
                 _outputFunction(str);
                 result = new ConstantData<string>(str);
                 break;
             }
-            case PrimitiveFunctionType.Input:
+            case PrimitiveFunction.Type.Input:
             {
                 if (variables.Count != 0)
                     throw new ArgumentException("parameter not match");
@@ -355,7 +330,7 @@ public class VirtualMachine
     {
         if(index < 0 || 
            index >= term.Expressions.Count ||
-           term.Expressions[index] is not VariableToken variable)
+           term.Expressions[index] is not VariableToken variable) // TODO 直接な関数定義は使えないの？
             return (false,index,null)!;
 
         var searchResult = _runStack.GetVariable(variable.Name);
@@ -381,7 +356,6 @@ public class VirtualMachine
                 break;
             case TermToken term:
             {
-                // TODO 読むのは一つだけ？
                 int index = 0;
                 var formulas = new List<IFormula>();
                 while (-1 < index && index < term.Expressions.Count)
@@ -422,14 +396,24 @@ public class VirtualMachine
 
                 if(searchResult is Void)
                 {
-                    // TODO 名前型の明示
+                    // ;から始まるならば名前型
+                    if (name[0] == ';')
+                    {
+                        result = new NameType(name.Substring(1));
+                        break;
+                    }
+                    
+                    // 数字の可能性
                     if(int.TryParse(name,out int value))
                     {
                         result = new ConstantData<int>(value);
                         break;
                     }
-                    result = new NameType(name);
-                    break;
+                    
+                    // TODO builtin
+
+                    // 不明ならエラー
+                    throw new Exception($"\"{name}\"を解決できませんでした");
                 }
 
                 // 変数が関数なら、関数をそのまま渡す

@@ -6,3 +6,4 @@ print(test("test")())
 __assign(void fun end)
 void()
 
+__put("ponpon")
