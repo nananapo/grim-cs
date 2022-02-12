@@ -55,7 +55,7 @@ public class VirtualMachine
 
     private IVariable Evaluate(IFormula target, int depth)
     {
-        //Debug($"EA {target}",depth);
+        Debug($"EA {target}",depth);
 
         if (target is UnknownVariable unknown)
         {
@@ -373,66 +373,18 @@ public class VirtualMachine
         return result;
     }
 
-    private (int index,IFormula formula) NextFormula(TermToken seed,int index)
-    {
-        var exprs = seed.Expressions;
-
-        List<IFormula> terms = new ();
-        List<FunctionToken> midOperators = new ();
-
-        while(-1 < index && index < exprs.Count)
-        {
-            // Termを1つ読む
-            IFormula term;
-            (index, term) = NextTerm(seed, index);
-            terms.Add(term);
-            
-            // TODO これ、Termが読めないことはあるのか？
-            
-            // 中値演算子を1つ読む
-            bool isMidOperator;
-            FunctionToken midOp;
-            (isMidOperator,index,midOp) = NextMidOperator(seed,index);
-            
-            if(!isMidOperator)
-                break;
-            
-            midOperators.Add(midOp);
-        } 
-        
-        // 中値演算子の数が合わないならエラー
-        if (terms.Count - 1 != midOperators.Count)
-        {
-            throw new Exception("中値演算子の数は項の数-1である必要があります");
-        }
-
-        // Termが一つならそれを返す
-        if (midOperators.Count == 0 && terms.Count == 1)
-        {
-            return (index, terms[0]);
-        }
-        
-        return (index,new Formula(terms,midOperators));
-    }
-
-    private (bool isMidOperator,int index,FunctionToken midOperator) NextMidOperator(TermToken term,int index)
-    {
-        if(index < 0 || 
-           index >= term.Expressions.Count ||
-           term.Expressions[index] is not VariableToken variable) // TODO 直接な関数定義は使えないの？
-            return (false,index,null)!;
-
-        var searchResult = _runStack.GetVariable(variable.Name);
-        
-        if(searchResult is not FunctionToken function ||
-           function.Type != FunctionType.Mid)
-            return (false,index,null)!;
-        
-        return (true,index+1,function);
-    }
-
+    /// <summary>
+    /// 式を読む
+    /// </summary>
+    /// <param name="expr"></param>
+    /// <returns></returns>
+    ///
+    /// TODO こいつが逐次読みじゃないのが問題ありそう...
     private IFormula ReadFormula(ExpressionToken expr)
     {
+
+        Debug("ReadFormula : " + expr,0);
+        
         IFormula result;
         
         switch(expr)
@@ -524,7 +476,76 @@ public class VirtualMachine
                 throw new NotImplementedException(expr.ToString());
         }
 
+        Debug("EndReadFormula : " + result,0);
+
         return result;
+    }
+    
+    private (int index,IFormula formula) NextFormula(TermToken seed,int index)
+    {
+
+        Debug("NextFormula : " + seed,0);
+        
+        var exprs = seed.Expressions;
+
+        List<IFormula> terms = new ();
+        List<FunctionToken> midOperators = new ();
+
+        while(-1 < index && index < exprs.Count)
+        {
+            // Termを1つ読む
+            IFormula term;
+            (index, term) = NextTerm(seed, index);
+            terms.Add(term);
+            
+            // 中値演算子を1つ読む
+            bool isMidOperator;
+            FunctionToken midOp;
+            (isMidOperator,index,midOp) = NextMidOperator(seed,index);
+            
+            if(!isMidOperator)
+                break;
+            
+            midOperators.Add(midOp);
+        } 
+        
+        // 中値演算子の数が合わないならエラー
+        if (terms.Count - 1 != midOperators.Count)
+        {
+            throw new Exception("中値演算子の数は項の数-1である必要があります");
+        }
+
+        IFormula result;
+
+        // Termが一つならそれを返す
+        if (midOperators.Count == 0 && terms.Count == 1)
+        {
+            result = terms[0];
+        }
+        else
+        {
+            result = new Formula(terms,midOperators);
+        }
+
+        Debug("EndNextFormula : " + result,0);
+
+        return (index, result);
+    }
+
+    private (bool isMidOperator,int index,FunctionToken midOperator) NextMidOperator(TermToken term,int index)
+    {
+        if(index < 0 || 
+           index >= term.Expressions.Count ||
+           term.Expressions[index] is not VariableToken variable) // TODO 直接な関数定義は使えないの？
+            return (false,index,null)!;
+
+        var searchResult = _runStack.GetVariable(variable.Name);
+        
+        if(searchResult is not FunctionToken function ||
+           function.Type != FunctionType.Mid)
+            return (false,index,null)!;
+        
+        return (true,index+1,function);
     }
 
     private (int index,IFormula term) NextTerm(TermToken target,int index)
