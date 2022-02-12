@@ -65,7 +65,7 @@ switch (args[0])
 
         foreach (var filename in Directory.GetFiles(programFolder,"*.grim"))
         {
-            var match = Regex.Match(filename.Substring(programFolder.Length-1),"[^/](.*?)\\.grim$");
+            var match = Regex.Match(filename.Substring(programFolder.Length-1-1),"[^/](.*?)\\.grim$");
             
             if (match.Groups.Count < 2)
             {

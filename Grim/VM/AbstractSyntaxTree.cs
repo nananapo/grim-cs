@@ -97,7 +97,8 @@ public class AbstractSyntaxTree
         // 前置演算子だけで終了した
         if(index == -1 && prefixFuncs.Count != 0)
         {
-            //TODO エラーではなくて、関数を合成する？
+            // TODO エラーではなくて、関数を合成する？
+            // TODO 最後の前置演算子をmidにする？
             throw new Exception($"There are {prefixFuncs.Count} prefix operators, but formula is not found.");
         }
         

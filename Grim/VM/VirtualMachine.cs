@@ -90,7 +90,7 @@ public class VirtualMachine
             Formula formula => EvaluateFormula(formula, depth),
             FunctionCall call => Evaluate(call, depth),
             ModifierTerm modifierTerm => EvaluateTerm(modifierTerm,depth),
-            FunctionToken functionToken => functionToken,
+            FunctionToken functionToken => functionToken,//TODO これはよくない
             NameType nameType => nameType,
             Void v => v,
             _ => throw new NotImplementedException(target.GetType().FullName)
