@@ -31,7 +31,7 @@ public class VirtualMachine
         for (int i = 0; i < depth; i++)
             spaces += "  ";
         
-        Console.WriteLine($"[VM] {depth} {spaces}{text}");
+        Console.WriteLine($"[VM]  {depth} {spaces}{text}");
     }
 
     public IVariable Execute(List<ExpressionToken> exprs,Dictionary<string,IVariable>? variables = null,int depth = 0)
