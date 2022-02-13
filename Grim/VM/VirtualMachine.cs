@@ -122,6 +122,13 @@ public class VirtualMachine
             
             var lefts = ops.Where(v => v.Priority == max && v.IsLeftAssociative).ToList();
             var rights = ops.Where(v => v.Priority == max && !v.IsLeftAssociative).ToList();
+            
+            /*
+            Console.WriteLine("COUNT : Term:" + terms.Count + " OP:"+ops.Count);
+            Console.WriteLine("MAX : " + max);
+            Console.WriteLine("L : " + string.Join(" , ",lefts));
+            Console.WriteLine("R : " + string.Join(" , ",rights));
+            */
 
             // すべてが右結合の場合
             if (lefts.Count == 0)
@@ -198,7 +205,6 @@ public class VirtualMachine
                     rights.RemoveAt(rights.Count-1);
                 }
             }
-            break;
         }
         
         // 残った項を前から処理する
