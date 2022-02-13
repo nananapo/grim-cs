@@ -467,6 +467,17 @@ public class VirtualMachine
                 }
                 break;
             }
+            case PrimitiveFunction.Type.Equal:
+            {
+                if (variables.Count != 2)
+                    throw new ArgumentException("parameter not match");
+
+                var va1 = variables[0];
+                var va2 = variables[1];
+
+                result = new ConstantData<int>(va1.Equals(va2) ? 1 : 0);
+                break;
+            }
             default:
                 throw new NotImplementedException();
         }
