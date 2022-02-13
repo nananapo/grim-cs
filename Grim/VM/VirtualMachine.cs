@@ -16,14 +16,13 @@ public class VirtualMachine
 
     private readonly AbstractSyntaxTree _ast;
 
-    public VirtualMachine(Action<string>? outputFunc = null,Func<string?>? inputFunc = null)
+    public VirtualMachine(Action<string>? outputFunc = null,Func<string?>? inputFunc = null,bool enableLogging = false)
     {
         _outputFunction = outputFunc ?? Console.Write;
         _inputFunction = inputFunc ?? Console.ReadLine;
-        _ast = new(_runStack)
-        {
-            EnableLogging = EnableLogging
-        };
+        
+        EnableLogging = enableLogging;
+        _ast = new(_runStack,enableLogging:enableLogging);
     }
 
     private void Debug(string text, int depth)
@@ -101,57 +100,113 @@ public class VirtualMachine
     {
         Debug($"EvalF : {formula}",depth);
         
-        IVariable result;
+        IVariable result = Void.Create();
         
         if (formula.Terms.Count == 0)
         {
             // TODO 関数として返す?
+            // TODO 関数の塊として返す?
             if (formula.MidOperators.Count != 0)
                 throw new Exception("中値演算子が不正な位置にあります");
 
-            result = Void.Create();
             Debug($"-> {result}",depth);
             return result;
         }
         
         var terms = formula.Terms.ToList();
         var ops = formula.MidOperators.ToList();
-        while (terms.Count > 1)
+        
+        while (terms.Count > 1 && ops.Count > 0)
         {
-            // 式だけが連続する場合、最後のTermを残して抜ける
-            if (ops.Count == 0)
-            {
-                while(terms.Count > 1)
-                {
-                    Evaluate(terms[0], depth + 1);
-                    terms.RemoveAt(0);
-                }
-                break;
-            }
-
             var max = ops.Select(v => Math.Abs(v.Priority)).Max();
-            var lefts = ops.Where(v => v.Priority == -max).ToList();
-            var rights = ops.Where(v => v.Priority == max).ToList();
+            
+            var lefts = ops.Where(v => v.Priority == max && v.IsLeftAssociative).ToList();
+            var rights = ops.Where(v => v.Priority == max && !v.IsLeftAssociative).ToList();
 
-            // すべての符号がそろっていて、右結合の場合
+            // すべてが右結合の場合
             if (lefts.Count == 0)
             {
-                
+                // 右結合は後ろから処理する
+                // TODO ソート必要？
+                while (rights.Count > 0)
+                {
+                    var fun = rights[^1];
+                    var opIndex = ops.IndexOf(fun);
+                    var t1 = terms[opIndex];
+                    var t2 = terms[opIndex + 1];
+                    
+                    terms[opIndex] = CallFunction(fun, new List<IFormula> {t1, t2}, depth + 1);
+                    
+                    // 削除
+                    terms.RemoveAt(opIndex+1);
+                    ops.RemoveAt(opIndex);
+                    rights.RemoveAt(rights.Count-1);
+                }
             }
             // すべてが左結合の場合
             else if (rights.Count == 0)
             {
-                
+                // 左結合は前から処理する
+                // TODO ソート必要？
+                while (lefts.Count > 0)
+                {
+                    var fun = lefts[0];
+                    var opIndex = ops.IndexOf(fun);
+                    var t1 = terms[opIndex];
+                    var t2 = terms[opIndex + 1];
+                    
+                    terms[opIndex] = CallFunction(fun, new List<IFormula> {t1, t2}, depth + 1);
+                    
+                    // 削除
+                    terms.RemoveAt(opIndex+1);
+                    ops.RemoveAt(opIndex);
+                    lefts.RemoveAt(0);
+                }
             }
             // 混ざっている
             // 左結合→右結合
             else
             {
-                
+                // 左結合を処理
+                while (lefts.Count > 0)
+                {
+                    var fun = lefts[0];
+                    var opIndex = ops.IndexOf(fun);
+                    var t1 = terms[opIndex];
+                    var t2 = terms[opIndex + 1];
+                    
+                    terms[opIndex] = CallFunction(fun, new List<IFormula> {t1, t2}, depth + 1);
+                    
+                    // 削除
+                    terms.RemoveAt(opIndex+1);
+                    ops.RemoveAt(opIndex);
+                    lefts.RemoveAt(0);
+                }
+                // 右結合を処理
+                while (rights.Count > 0)
+                {
+                    var fun = rights[^1];
+                    var opIndex = ops.IndexOf(fun);
+                    var t1 = terms[opIndex];
+                    var t2 = terms[opIndex + 1];
+                    
+                    terms[opIndex] = CallFunction(fun, new List<IFormula> {t1, t2}, depth + 1);
+                    
+                    // 削除
+                    terms.RemoveAt(opIndex+1);
+                    ops.RemoveAt(opIndex);
+                    rights.RemoveAt(rights.Count-1);
+                }
             }
             break;
         }
-        result = Evaluate(terms[0],depth+1);
+        
+        // 残った項を前から処理する
+        while(terms.Count > 0)
+        {
+            result = Evaluate(terms[0], depth + 1);
+            terms.RemoveAt(0);
+        }
         
         Debug($"-> {result}",depth);
         return result;
@@ -358,7 +413,7 @@ public class VirtualMachine
                     {
                         ConstantData<string> ds2 => new ConstantData<string>(ds1.Value + ds2.Value),
                         ConstantData<int> di2 => new ConstantData<string>(ds1.Value + di2.Value),
-                        _ => throw new AddException(va1, va2)
+                        _ => throw new ParameterTypeException("__add",va1, va2)
                     };
                 }
                 else if (va1 is ConstantData<int> di1)
@@ -367,14 +422,31 @@ public class VirtualMachine
                     {
                         ConstantData<string> ds2 => new ConstantData<string>(di1.Value + ds2.Value),
                         ConstantData<int> di2 => new ConstantData<int>(di1.Value + di2.Value),
-                        _ => throw new AddException(va1, va2)
+                        _ => throw new ParameterTypeException("__add",va1, va2)
                     };
                 }
                 else
                 {
-                    throw new AddException(va1, va2);
+                    throw new ParameterTypeException("__add",va1, va2);
                 }
                 
+                break;
+            }
+            case PrimitiveFunction.Type.Negate:
+            {
+                if (variables.Count != 1)
+                    throw new ArgumentException("parameter not match");
+
+                var va = variables[0]; 
+                
+                if (va is ConstantData<int> data)
+                {
+                    result = new ConstantData<int>(data.Value * -1);
+                }
+                else
+                {
+                    throw new ParameterTypeException("__negate",va);
+                }
                 break;
             }
             default:
