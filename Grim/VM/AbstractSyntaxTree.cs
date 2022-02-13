@@ -1,4 +1,5 @@
 ﻿using Grim.Token;
+using grim_interpreter.Token;
 
 namespace Grim.VM;
 
@@ -28,7 +29,7 @@ public class AbstractSyntaxTree
     
     public (int index,IFormula formula) NextFormula(List<ExpressionToken> exprs,int index,int depth)
     {
-        Debug($"NextFormula : " + string.Join(",", exprs.Skip(index)),depth);
+        Debug($"NextFormula[{index}] : " + string.Join(",", exprs.Skip(index)),depth);
 
         List<IFormula> terms = new ();
         List<Function> midOperators = new ();
@@ -114,14 +115,35 @@ public class AbstractSyntaxTree
         List<Function> prefixFuncs;
         (index,prefixFuncs) = ReadFixFunctions(exprs,index,true);
 
-        // 前置演算子だけで終了した
-        if(index == -1 && prefixFuncs.Count != 0)
+        // 前置演算子だけで終了
+        if(index < 0 || index >= exprs.Count)
         {
-            // TODO エラーではなくて、関数を合成する？
-            // TODO 最後の前置演算子をmidにする？
-            throw new Exception($"There are {prefixFuncs.Count} prefix operators, but formula is not found.");
+            // 前置演算子が空ならVoidを返す
+            if (prefixFuncs.Count == 0)
+            {
+                return (index, Void.Instance);
+            }
+            
+            // TODO 一気に適用できる演算子列を返したい
+            // とりあえず最後の前置演算子を返す
+            return (index, prefixFuncs[^1]);
         }
         
+        // デリミタなら終了
+        if (exprs[index] is DelimiterToken)
+        {
+            // 前置演算子が空ならデリミタをスキップして読み込みなおす
+            if (prefixFuncs.Count == 0)
+            {
+                Debug("Skip Delimiter;",depth);
+                return NextTerm(exprs,index+1,depth);
+            }
+            
+            // TODO 一気に適用できる演算子列を返したい
+            // とりあえず最後の前置演算子を返す
+            return (index, prefixFuncs[^1]);
+        }
+
         // 本体を読む
         IFormula midTerm = ReadFormula(exprs[index],depth+1);
         
@@ -148,7 +170,6 @@ public class AbstractSyntaxTree
     /// <returns></returns>
     private IFormula ReadFormula(ExpressionToken expr,int depth)
     {
-
         Debug($"ReadFormula : {expr}",depth);
         
         IFormula result;
@@ -244,6 +265,7 @@ public class AbstractSyntaxTree
                 result = searchResult;
                 break;
             }
+            case DelimiterToken:
             default:
                 throw new NotImplementedException(expr.ToString());
         }

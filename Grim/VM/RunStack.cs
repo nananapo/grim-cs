@@ -61,7 +61,7 @@ public class RunStack
         }
         
         // 見つからなかったらVoidを返す
-        return Void.Create();
+        return Void.Instance;
     }
     
 }

@@ -57,7 +57,7 @@ public class VirtualMachine
             }
         }
 
-        IVariable result = Void.Create();
+        IVariable result = Void.Instance;
         
         int index = 0;
         while (-1 < index && index < exprs.Count)
@@ -107,7 +107,7 @@ public class VirtualMachine
     {
         Debug($"EvalF : {formula}",depth);
         
-        IVariable result = Void.Create();
+        IVariable result = Void.Instance;
         
         if (formula.Terms.Count == 0)
         {
@@ -390,6 +390,8 @@ public class VirtualMachine
 
                 var value = variables[1];
                 nameType.Scope.Set(nameType.Name, value);
+                
+                //Console.WriteLine("ASSIGNED " + nameType.Name +" : "+ value);
                 
                 result = value;
                 break;

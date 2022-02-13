@@ -22,11 +22,9 @@ public class Scope
             result = _dict[name];
             return true;
         }
-        else
-        {       
-            result = Void.Create();
-            return false;
-        }
+
+        result = Void.Instance;
+        return false;
     }
 
     public void Set(string name,IVariable variable)
