@@ -1,12 +1,16 @@
 using Grim.VM;
+using grim_interpreter.Token;
 
 namespace Grim.Token;
 
 public class Tokenizer
 {
+    
     public const char NameTypePrefix = ':';
     
-    public const string Symbol = "()\" \t\n";
+    public const char DynamicScopePrefix = '@';
+    
+    public const string Symbol = ";()\" \t\n";
 
     private readonly string _program;
 
@@ -63,6 +67,7 @@ public class Tokenizer
             {
                 case ")":
                     return (index,tokens);
+                case ";":
                 case "\"":
                 case "fun":
                 case "opp":
@@ -109,6 +114,9 @@ public class Tokenizer
                 case "\t":
                 case "\n":
                     continue;
+                case ";":
+                    expr = DelimiterToken.Instance;
+                    break;
                 case ")":
                     throw new Exception("Unexpected close )");
                 case "(":

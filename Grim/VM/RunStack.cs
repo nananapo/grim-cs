@@ -1,83 +1,67 @@
-﻿namespace Grim.VM;
+﻿using Grim.Token;
+
+namespace Grim.VM;
 
 public class RunStack
 {
-    
-    private readonly List<VariableSet> _lexicalScope = new();
-    //TODO 後で実装
-    //private readonly List<VariableSet> _dynamicScope = new();
 
-    public void Push()
+    public readonly Scope Root = new(null,null);
+    
+    // 現在のスコープ
+    public Scope Now { get; private set; }
+
+    public RunStack()
     {
-        _lexicalScope.Add(new VariableSet());
+        Now = Root;
+    }
+
+    public Scope Push(Scope lexicalScope)
+    {
+        var newScope = new Scope(lexicalScope, Now);
+        Now = newScope;
+        return newScope;
     }
 
     public void Pop()
     {
-        _lexicalScope.RemoveAt(_lexicalScope.Count-1);
-    }
-    
-    // TODO スコープの指定
-    public bool TryGetVariable<T>(string name, out T variable) where T : IVariable
-    {
-        variable = GetVariable(name) as T;
-        return variable != null;
+        Now = Now.DynamicScope ?? throw new Exception("pop count");
     }
 
-    // TODO スコープの指定
-    public bool TryGetVariable(string name, out IVariable variable)
-    {
-        variable = GetVariable(name);
-        return variable is not Void;
-    }
-
+    /// <summary>
+    /// 変数を取得する
+    /// </summary>
+    /// <param name="name"></param>
+    /// <returns>結果、見つからなかったらVoid</returns>
+    /// <exception cref="Exception"></exception>
     public IVariable GetVariable(string name)
     {
-        foreach (var set in _lexicalScope)
+        bool isLexicalScope = true;
+        
+        // 動的スコープか静的スコープかの判定
+        // TODO Tokenizerでどうにかしたい
+        if (name[0] == Tokenizer.DynamicScopePrefix)
         {
-            if (set.Exists(name))
+            if (name.Length == 1)
             {
-                return set.Get(name);
+                throw new Exception("@の後には識別子が必要です");
             }
+            isLexicalScope = true;
+            name = name.Substring(1);
         }
-        return Void.Create();
-    }
-
-    public void Assign(string name,IVariable variable)
-    {
-        foreach (var set in _lexicalScope)
+        
+        // 遡って探す
+        var current = Now;
+        while (current != null)
         {
-            if (set.Exists(name))
+            if (current.TryGet(name,out var result))
             {
-                set.Set(name,variable);
-                return;
+                return result;
             }
+            current = isLexicalScope ? current.LexicalScope : current.DynamicScope;
         }
-        _lexicalScope[0].Set(name,variable);
+        
+        // 見つからなかったらVoidを返す
+        return Void.Instance;
     }
-
-    public void AssignHere(string name,IVariable variable)
-    {
-        _lexicalScope[^1].Set(name,variable);
-    }
-
-    private class VariableSet
-    {
-        private readonly Dictionary<string, IVariable> _dict = new();
-
-        public bool Exists(string name)
-        {
-            return _dict.ContainsKey(name);
-        }
-
-        public IVariable Get(string name)
-        {
-            return Exists(name) ? _dict[name] : Void.Create();
-        }
-
-        public void Set(string name,IVariable variable)
-        {
-            _dict[name] = variable;
-        }
-    }
+    
 }

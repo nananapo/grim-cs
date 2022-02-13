@@ -9,7 +9,7 @@ public sealed class Void : IVariable,ExpressionToken
         
     }
 
-    public static Void Create() => new ();
+    public static readonly Void Instance = new();
 
     public override string ToString()
     {

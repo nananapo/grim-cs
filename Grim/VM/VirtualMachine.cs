@@ -36,9 +36,16 @@ public class VirtualMachine
         Console.WriteLine($"[VM]  {depth} {spaces}{text}");
     }
 
-    public IVariable Execute(List<ExpressionToken> exprs,Dictionary<string,IVariable>? variables = null,int depth = 0)
+    public IVariable Execute(List<ExpressionToken> exprs,Scope? lexicalScope = null,Dictionary<string,IVariable>? variables = null,int depth = 0)
     {
-        _runStack.Push();
+        // 省略注意
+        if (lexicalScope == null)
+        {
+            lexicalScope = _runStack.Root;
+        }
+        
+        // スタックする
+        _runStack.Push(lexicalScope);
 
         // 引数を環境に入れる
         // TODO 静的スコープ
@@ -46,11 +53,11 @@ public class VirtualMachine
         {
             foreach (var (name,variable) in variables)
             {
-                _runStack.AssignHere(name,variable);
+                _runStack.Now.Set(name,variable);
             }
         }
 
-        IVariable result = Void.Create();
+        IVariable result = Void.Instance;
         
         int index = 0;
         while (-1 < index && index < exprs.Count)
@@ -89,7 +96,7 @@ public class VirtualMachine
             Formula formula => EvaluateFormula(formula, depth),
             FunctionCall call => Evaluate(call, depth),
             ModifierTerm modifierTerm => EvaluateTerm(modifierTerm,depth),
-            FunctionToken functionToken => functionToken,//TODO これはよくない
+            Function function => function,
             NameType nameType => nameType,
             Void v => v,
             _ => throw new NotImplementedException(target.GetType().FullName)
@@ -100,7 +107,7 @@ public class VirtualMachine
     {
         Debug($"EvalF : {formula}",depth);
         
-        IVariable result = Void.Create();
+        IVariable result = Void.Instance;
         
         if (formula.Terms.Count == 0)
         {
@@ -221,18 +228,19 @@ public class VirtualMachine
     private IVariable Evaluate(FunctionCall funcCall,int depth)
     {
         Debug($"EvalC : {funcCall}",depth);
-        // 関数を取得する
-        var function = Evaluate(funcCall.Lambda, depth+1);
-
+        
         IVariable result;
         
+        // 関数を取得する
+        var body = Evaluate(funcCall.Lambda, depth+1);
+        
         // 正常に取得できた場合、実行する
-        if (function is FunctionToken functionToken)
+        if (body is Function function)
         {
-            result = CallFunction(functionToken,funcCall.Parameters,depth+1);
+            result = CallFunction(function,funcCall.Parameters,depth+1);
         }
         // builtin
-        else if (function is PrimitiveFunction primitive)
+        else if (body is PrimitiveFunction primitive)
         {
             result = CallPrimitiveFunction(primitive, funcCall.Parameters, depth + 1);
         }
@@ -323,7 +331,7 @@ public class VirtualMachine
     /// <param name="depth"></param>
     /// <returns></returns>
     /// <exception cref="ArgumentException"></exception>
-    private IVariable CallFunction(FunctionToken function, List<IFormula> formulas,int depth)
+    private IVariable CallFunction(Function function, List<IFormula> formulas,int depth)
     {
         Debug($"EvalFT : {function}",depth);
         
@@ -342,7 +350,7 @@ public class VirtualMachine
         }
 
         // 関数を実行
-        var result = Execute(new List<ExpressionToken>{function.Body},dict,depth);
+        var result = Execute(new List<ExpressionToken>{function.Body},function.DefinedScope,dict,depth);
         
         //結果を返す
         Debug($"-> {result}",depth);
@@ -380,11 +388,10 @@ public class VirtualMachine
                     throw new ArgumentException("assignの第一引数は名前型である必要があります。");
                 }
 
-                var name = nameType.Name;
                 var value = variables[1];
-                _runStack.Assign(name, value);
+                nameType.Scope.Set(nameType.Name, value);
                 
-                //Console.WriteLine($"ASSIGNED {name} : {value}");
+                //Console.WriteLine("ASSIGNED " + nameType.Name +" : "+ value);
                 
                 result = value;
                 break;

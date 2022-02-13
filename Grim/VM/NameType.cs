@@ -2,14 +2,15 @@
 
 public sealed class NameType : IVariable
 {
-
-    //TODO 定義場所
     
     public readonly string Name;
+
+    public readonly Scope Scope;
     
-    public NameType(string name)
+    public NameType(string name,Scope scope)
     {
         Name = name;
+        Scope = scope;
     }
 
     public override string ToString()
