@@ -2,7 +2,6 @@ using Grim.Token;
 
 namespace Grim.VM;
 
-// TODO 名前を変える
 public class Formula : IFormula
 {
     public readonly List<IFormula> Terms;
