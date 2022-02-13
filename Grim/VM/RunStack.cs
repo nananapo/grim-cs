@@ -49,7 +49,7 @@ public class RunStack
             {
                 throw new Exception("@の後には識別子が必要です");
             }
-            isLexicalScope = true;
+            isLexicalScope = false;
             name = name.Substring(1);
         }
         
