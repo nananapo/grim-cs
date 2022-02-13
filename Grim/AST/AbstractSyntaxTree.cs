@@ -238,9 +238,9 @@ public class AbstractSyntaxTree
                     }
                     
                     // builtin
-                    if (BuiltInFunction.TryParse(name, out var primitiveFunction))
+                    if (BuiltInFunction.TryParse(name, out var builtInFunction))
                     {
-                        result = primitiveFunction;
+                        result = builtInFunction;
                         break;
                     }
                     
