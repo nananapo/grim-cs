@@ -159,7 +159,7 @@ public class AbstractSyntaxTree
         }
         
         // 演算子で修飾して返す
-        return (index,new ModifierTerm(prefixFuncs,midTerm,suffixFuncs));
+        return (index,new Term(prefixFuncs,midTerm,suffixFuncs));
     }
 
     /// <summary>

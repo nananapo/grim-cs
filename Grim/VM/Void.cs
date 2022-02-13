@@ -1,8 +1,6 @@
-﻿using Grim.Token;
+﻿namespace Grim.VM;
 
-namespace Grim.VM;
-
-public sealed class Void : IVariable,IToken
+public sealed class Void : IVariable
 {
     private Void()
     {

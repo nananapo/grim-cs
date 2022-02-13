@@ -1,22 +1,22 @@
 ﻿namespace Grim.VM;
 
-public class ModifierTerm : IFormula
+public class Term : IFormula
 {
-    public readonly IFormula Term;
+    public readonly IFormula MidFormula;
     public readonly List<Function> PrefixFuncs;
     public readonly List<Function> SuffixFuncs;
     
-    public ModifierTerm(List<Function> prefix,IFormula term,List<Function> suffix)
+    public Term(List<Function> prefix,IFormula midFormula,List<Function> suffix)
     {
         PrefixFuncs = prefix;
         SuffixFuncs = suffix;
-        Term = term;
+        MidFormula = midFormula;
     }
     
     public override string ToString()
     {
         return $"MTerm<P:{string.Join(",",PrefixFuncs)}>" +
-               $"<T:{Term}>" +
+               $"<T:{MidFormula}>" +
                $"<S:{string.Join(",",SuffixFuncs)}>";
     }
 }

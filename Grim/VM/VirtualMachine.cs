@@ -100,7 +100,7 @@ public class VirtualMachine
             
             Formula formula => EvaluateFormula(formula, depth),
             FunctionCall call => Evaluate(call, depth),
-            ModifierTerm modifierTerm => EvaluateTerm(modifierTerm,depth),
+            Term modifierTerm => EvaluateTerm(modifierTerm,depth),
             Function function => function,
             NameType nameType => nameType,
             Void v => v,
@@ -263,12 +263,12 @@ public class VirtualMachine
     /// </summary>
     /// <param name="term"></param>
     /// <param name="depth"></param>
-    private IVariable EvaluateTerm(ModifierTerm term,int depth)
+    private IVariable EvaluateTerm(Term term,int depth)
     { 
         Debug($"EvalMT : {term}",depth);
 
         // 中心を評価
-        var result = Evaluate(term.Term,depth+1);
+        var result = Evaluate(term.MidFormula,depth+1);
         
         // prefixとsuffixを処理
         int pIndex = 0;
