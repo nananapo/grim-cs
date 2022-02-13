@@ -1,6 +1,4 @@
-﻿using Grim.Token;
-
-namespace grim_interpreter.Token;
+﻿namespace Grim.Token;
 
 public sealed class DelimiterToken : IToken
 {

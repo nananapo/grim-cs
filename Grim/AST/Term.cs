@@ -1,4 +1,6 @@
-﻿namespace Grim.VM;
+﻿using Grim.VM;
+
+namespace Grim.AST;
 
 public class Term : IFormula
 {

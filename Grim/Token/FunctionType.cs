@@ -1,4 +1,4 @@
-namespace Grim.VM;
+namespace Grim.Token;
 
 public enum FunctionType
 {

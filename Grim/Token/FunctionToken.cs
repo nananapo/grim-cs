@@ -1,5 +1,3 @@
-using Grim.VM;
-
 namespace Grim.Token;
 
 public class FunctionToken : IToken

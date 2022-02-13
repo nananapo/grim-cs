@@ -1,4 +1,4 @@
-﻿namespace Grim.VM;
+﻿namespace Grim.AST;
 
 public sealed class Unknown : IFormula
 {

@@ -1,8 +1,8 @@
 ﻿using Grim.Token;
-using grim_interpreter.Token;
+using Grim.VM;
+using Void = Grim.VM.Void;
 
-namespace Grim.VM;
-
+namespace Grim.AST;
 public class AbstractSyntaxTree
 {
 

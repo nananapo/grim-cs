@@ -1,6 +1,6 @@
-﻿using Grim.Token;
+﻿using Grim.VM;
 
-namespace Grim.VM;
+namespace Grim.Token;
 
 public class ConstantData<T> : IVariable,IToken,IEquatable<ConstantData<T>>
 {
