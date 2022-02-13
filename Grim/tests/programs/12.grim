@@ -1,0 +1,6 @@
+__assign(:apply5 fun(f) f(5) end)
+apply5(__put)
+
+__put(apply5(fun(v) fun(v2) __add(v v2) end end)(2))
+
+__put(fun(f) f(5) end(fun(v) fun(v2) __add(v v2) end end)(4))
