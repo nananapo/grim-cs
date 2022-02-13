@@ -4,7 +4,10 @@ namespace Grim.Token;
 
 public class Tokenizer
 {
+    
     public const char NameTypePrefix = ':';
+    
+    public const char DynamicScopePrefix = '@';
     
     public const string Symbol = "()\" \t\n";
 

@@ -31,7 +31,7 @@ public class AbstractSyntaxTree
         Debug($"NextFormula : " + string.Join(",", exprs.Skip(index)),depth);
 
         List<IFormula> terms = new ();
-        List<FunctionToken> midOperators = new ();
+        List<Function> midOperators = new ();
 
         while(-1 < index && index < exprs.Count)
         {
@@ -42,7 +42,7 @@ public class AbstractSyntaxTree
             
             // 中値演算子を1つ読む
             bool isMidOperator;
-            FunctionToken midOp;
+            Function midOp;
             (isMidOperator,index,midOp) = NextMidOperator(exprs,index);
             
             if(!isMidOperator)
@@ -74,25 +74,44 @@ public class AbstractSyntaxTree
         return (index, result);
     }
 
-    private (bool isMidOperator,int index,FunctionToken midOperator) NextMidOperator(List<ExpressionToken> exprs,int index)
+    private (bool isMidOperator,int index,Function midOperator) NextMidOperator(List<ExpressionToken> exprs,int index)
     {
-        if(index < 0 || 
-           index >= exprs.Count ||
-           exprs[index] is not VariableToken variable) // TODO 直接な関数定義は使えないの？
+        // 範囲チェック
+        if(index < 0 || index >= exprs.Count)
             return (false,index,null)!;
+        
+        // 関数定義
+        if (exprs[index] is FunctionToken functionToken)
+        {
+            // 中値演算子ではないなら終了
+            if(functionToken.Type != FunctionType.Mid)
+                return (false,index,null)!;
+
+            // Functionを返す
+            return (true, index + 1, new Function(_runStack.Now, functionToken));
+        }
+        
+        // 変数でないなら終了
+        if (exprs[index] is not VariableToken variable)
+        {
+            return (false,index,null)!;
+        }
 
         var searchResult = _runStack.GetVariable(variable.Name);
         
-        if(searchResult is not FunctionToken function ||
+        // 関数ではないか
+        // 中値演算子ではないなら終了
+        if(searchResult is not Function function ||
            function.Type != FunctionType.Mid)
             return (false,index,null)!;
         
+        // Functionを返す
         return (true,index+1,function);
     }
 
     private (int index,IFormula term) NextTerm(List<ExpressionToken> exprs,int index,int depth)
     {
-        List<FunctionToken> prefixFuncs;
+        List<Function> prefixFuncs;
         (index,prefixFuncs) = ReadFixFunctions(exprs,index,true);
 
         // 前置演算子だけで終了した
@@ -107,7 +126,7 @@ public class AbstractSyntaxTree
         IFormula midTerm = ReadFormula(exprs[index],depth+1);
         
         // 後置演算子を読む
-        List<FunctionToken> suffixFuncs;
+        List<Function> suffixFuncs;
         (index,suffixFuncs) = ReadFixFunctions(exprs,index+1,false);
 
         // 前置演算子も後置演算子もないならそのまま返す
@@ -152,7 +171,7 @@ public class AbstractSyntaxTree
                     (index,formula) = NextFormula(term.Expressions,index,depth+1);
                     formulas.Add(formula);
                 }
-                result = new Formula(formulas,new List<FunctionToken>());
+                result = new Formula(formulas,new List<Function>());
                 break;
             }
             case FunctionCallToken funcCall:
@@ -175,7 +194,7 @@ public class AbstractSyntaxTree
                 break;
             }
             case FunctionToken func:
-                result = func;
+                result = new Function(_runStack.Now,func);
                 break;
             case VariableToken variable:
             {
@@ -185,6 +204,7 @@ public class AbstractSyntaxTree
                 if(searchResult is Void)
                 {
                     // ;から始まるならば名前型
+                    // TODO Tokenizerでどうにかしたい
                     if (name[0] == Tokenizer.NameTypePrefix)
                     {
                         if (name.Length == 1)
@@ -192,7 +212,7 @@ public class AbstractSyntaxTree
                             throw new Exception(";の後には識別子が必要です");
                         }
                         
-                        result = new NameType(name.Substring(1));
+                        result = new NameType(name.Substring(1),_runStack.Now);
                         break;
                     }
                     
@@ -215,7 +235,7 @@ public class AbstractSyntaxTree
                 }
 
                 // 変数が関数なら、関数をそのまま渡す
-                if(searchResult is FunctionToken func)
+                if(searchResult is Function func)
                 {
                     result = func;
                     break;
@@ -240,33 +260,47 @@ public class AbstractSyntaxTree
     /// <param name="index"></param>
     /// <param name="isPrefixMode"></param>
     /// <returns></returns>
-    private (int index, List<FunctionToken> functions) ReadFixFunctions(List<ExpressionToken> exprs,int index,bool isPrefixMode)
+    private (int index, List<Function> functions) ReadFixFunctions(List<ExpressionToken> exprs,int index,bool isPrefixMode)
     {
-        var functions = new List<FunctionToken>();
+        var functions = new List<Function>();
         
-        while(index < exprs.Count)
+        for(;index < exprs.Count;index++)
         {
             var expr = exprs[index];
+
+            // ここで定義されている
+            if (expr is FunctionToken functionToken)
+            {
+                // 前置演算子でも後置演算子でもない場合は終了
+                if(!(functionToken.Type == FunctionType.Prefix && isPrefixMode) 
+                   && !(functionToken.Type == FunctionType.Suffix && !isPrefixMode))
+                {
+                    return (index,functions);
+                }
+                
+                functions.Add(new Function(_runStack.Now,functionToken));
+                continue;
+            }
+            
+            // 変数でないなら終了
             if(expr is not VariableToken variable)
             {
                 return (index,functions);
             }
-
+            
+            // 変数なら検索する
             var searchResult = _runStack.GetVariable(variable.Name);
 
-            if(searchResult is not FunctionToken func)
-            {
-                return (index,functions);
-            }
-
-            if(!(func.Type == FunctionType.Prefix && isPrefixMode) 
+            // 関数ではないか
+            // 前置演算子でも後置演算子でもない場合は終了
+            if(searchResult is not Function func ||
+               !(func.Type == FunctionType.Prefix && isPrefixMode) 
                && !(func.Type == FunctionType.Suffix && !isPrefixMode))
             {
                 return (index,functions);
             }
 
             functions.Add(func);
-            index++;
         }
 
         return (-1,functions);

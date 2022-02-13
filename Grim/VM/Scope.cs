@@ -15,14 +15,18 @@ public class Scope
         DynamicScope = dynamicScope;
     }
 
-    public bool Exists(string name)
+    public bool TryGet(string name,out IVariable result)
     {
-        return _dict.ContainsKey(name);
-    }
-
-    public IVariable Get(string name)
-    {
-        return _dict.GetValueOrDefault(name,Void.Create());
+        if (_dict.ContainsKey(name))
+        {
+            result = _dict[name];
+            return true;
+        }
+        else
+        {       
+            result = Void.Create();
+            return false;
+        }
     }
 
     public void Set(string name,IVariable variable)

@@ -5,10 +5,10 @@ namespace Grim.VM;
 public class ModifierTerm : IFormula
 {
     public readonly IFormula Term;
-    public readonly List<FunctionToken> PrefixFuncs;
-    public readonly List<FunctionToken> SuffixFuncs;
+    public readonly List<Function> PrefixFuncs;
+    public readonly List<Function> SuffixFuncs;
     
-    public ModifierTerm(List<FunctionToken> prefix,IFormula term,List<FunctionToken> suffix)
+    public ModifierTerm(List<Function> prefix,IFormula term,List<Function> suffix)
     {
         PrefixFuncs = prefix;
         SuffixFuncs = suffix;
