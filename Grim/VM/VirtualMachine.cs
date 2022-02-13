@@ -46,7 +46,7 @@ public class VirtualMachine
         {
             foreach (var (name,variable) in variables)
             {
-                _runStack.AssignHere(name,variable);
+                _runStack.Now.Set(name,variable);
             }
         }
 
@@ -380,9 +380,8 @@ public class VirtualMachine
                     throw new ArgumentException("assignの第一引数は名前型である必要があります。");
                 }
 
-                var name = nameType.Name;
                 var value = variables[1];
-                _runStack.Assign(name, value);
+                _runStack.Assign(nameType, value);
                 
                 //Console.WriteLine($"ASSIGNED {name} : {value}");
                 
