@@ -96,7 +96,7 @@ public class VirtualMachine
             // 定数
             ConstantData<string> value => value,
             ConstantData<int> value => value,
-            PrimitiveFunction func => func,
+            BuiltInFunction func => func,
             
             Formula formula => EvaluateFormula(formula, depth),
             FunctionCall call => Evaluate(call, depth),
@@ -245,7 +245,7 @@ public class VirtualMachine
             result = CallFunction(function,funcCall.Parameters,depth+1);
         }
         // builtin
-        else if (body is PrimitiveFunction primitive)
+        else if (body is BuiltInFunction primitive)
         {
             result = CallPrimitiveFunction(primitive, funcCall.Parameters, depth + 1);
         }
@@ -365,23 +365,23 @@ public class VirtualMachine
     /// <summary>
     /// ビルトイン関数を呼ぶ
     /// </summary>
-    /// <param name="primitive"></param>
+    /// <param name="builtIn"></param>
     /// <param name="parameters"></param>
     /// <param name="depth"></param>
     /// <returns></returns>
     /// <exception cref="ArgumentException"></exception>
     /// <exception cref="NotImplementedException"></exception>
-    private IVariable CallPrimitiveFunction(PrimitiveFunction primitive, List<IFormula> parameters,int depth)
+    private IVariable CallPrimitiveFunction(BuiltInFunction builtIn, List<IFormula> parameters,int depth)
     {        
-        Debug($"EvalP : {primitive}",depth);
+        Debug($"EvalP : {builtIn}",depth);
 
         // とりあえず評価しておく
         var variables = parameters.Select(f=>Evaluate(f,depth+1)).ToList();
 
         IVariable result;
-        switch (primitive.Function)
+        switch (builtIn.Function)
         {
-            case PrimitiveFunction.Type.Assign:
+            case BuiltInFunctionType.Assign:
             {
                 if (variables.Count != 2)
                 {
@@ -401,14 +401,14 @@ public class VirtualMachine
                 result = value;
                 break;
             }
-            case PrimitiveFunction.Type.Put:
+            case BuiltInFunctionType.Put:
             {
                 var str = string.Join(" ", variables);
                 _outputFunction(str);
                 result = new ConstantData<string>(str);
                 break;
             }
-            case PrimitiveFunction.Type.Input:
+            case BuiltInFunctionType.Input:
             {
                 if (variables.Count != 0)
                     throw new ArgumentException("parameter not match");
@@ -417,7 +417,7 @@ public class VirtualMachine
                 result = new ConstantData<string>(str ?? "");
                 break;
             }
-            case PrimitiveFunction.Type.Add:
+            case BuiltInFunctionType.Add:
             {
                 if (variables.Count != 2)
                     throw new ArgumentException("parameter not match");
@@ -450,7 +450,7 @@ public class VirtualMachine
                 
                 break;
             }
-            case PrimitiveFunction.Type.Negate:
+            case BuiltInFunctionType.Negate:
             {
                 if (variables.Count != 1)
                     throw new ArgumentException("parameter not match");
@@ -467,7 +467,7 @@ public class VirtualMachine
                 }
                 break;
             }
-            case PrimitiveFunction.Type.Equal:
+            case BuiltInFunctionType.Equal:
             {
                 if (variables.Count != 2)
                     throw new ArgumentException("parameter not match");
