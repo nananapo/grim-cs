@@ -8,6 +8,7 @@ public class PrimitiveFunction : IVariable
         Input,
         Assign,
         Add,
+        Negate,
         Equal
     }
 
@@ -43,6 +44,9 @@ public class PrimitiveFunction : IVariable
                 break;
             case "__add":
                 primitiveFunction = Create(Type.Add);
+                break;
+            case "__negate":
+                primitiveFunction = Create(Type.Negate);
                 break;
             case "__equal":
                 primitiveFunction = Create(Type.Equal);

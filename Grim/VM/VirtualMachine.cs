@@ -413,7 +413,7 @@ public class VirtualMachine
                     {
                         ConstantData<string> ds2 => new ConstantData<string>(ds1.Value + ds2.Value),
                         ConstantData<int> di2 => new ConstantData<string>(ds1.Value + di2.Value),
-                        _ => throw new AddException(va1, va2)
+                        _ => throw new ParameterTypeException("__add",va1, va2)
                     };
                 }
                 else if (va1 is ConstantData<int> di1)
@@ -422,14 +422,31 @@ public class VirtualMachine
                     {
                         ConstantData<string> ds2 => new ConstantData<string>(di1.Value + ds2.Value),
                         ConstantData<int> di2 => new ConstantData<int>(di1.Value + di2.Value),
-                        _ => throw new AddException(va1, va2)
+                        _ => throw new ParameterTypeException("__add",va1, va2)
                     };
                 }
                 else
                 {
-                    throw new AddException(va1, va2);
+                    throw new ParameterTypeException("__add",va1, va2);
                 }
                 
+                break;
+            }
+            case PrimitiveFunction.Type.Negate:
+            {
+                if (variables.Count != 1)
+                    throw new ArgumentException("parameter not match");
+
+                var va = variables[0]; 
+                
+                if (va is ConstantData<int> data)
+                {
+                    result = new ConstantData<int>(data.Value * -1);
+                }
+                else
+                {
+                    throw new ParameterTypeException("__negate",va);
+                }
                 break;
             }
             default:
