@@ -381,9 +381,7 @@ public class VirtualMachine
                 }
 
                 var value = variables[1];
-                _runStack.Assign(nameType, value);
-                
-                //Console.WriteLine($"ASSIGNED {name} : {value}");
+                nameType.Scope.Set(nameType.Name, value);
                 
                 result = value;
                 break;
