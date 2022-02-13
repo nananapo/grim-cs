@@ -10,6 +10,8 @@ public class RunStack
     // 現在のスコープ
     public Scope Now { get; private set; }
 
+    public int StackCount { get; private set; } = 0;
+
     public RunStack()
     {
         Now = Root;
@@ -17,6 +19,7 @@ public class RunStack
 
     public Scope Push(Scope lexicalScope)
     {
+        StackCount++;
         var newScope = new Scope(lexicalScope, Now);
         Now = newScope;
         return newScope;
@@ -24,6 +27,7 @@ public class RunStack
 
     public void Pop()
     {
+        StackCount--;
         Now = Now.DynamicScope ?? throw new Exception("pop count");
     }
 

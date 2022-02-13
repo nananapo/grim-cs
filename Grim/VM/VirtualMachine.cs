@@ -46,6 +46,8 @@ public class VirtualMachine
         
         // スタックする
         _runStack.Push(lexicalScope);
+        
+        Debug($"STACK PUSH[{_runStack.StackCount}]",depth);
 
         // 引数を環境に入れる
         // TODO 静的スコープ
@@ -63,10 +65,13 @@ public class VirtualMachine
         while (-1 < index && index < exprs.Count)
         {
             IFormula formula;
+            if(EnableLogging) Console.WriteLine();
             (index,formula) = _ast.NextFormula(exprs,index,0);
+            if(EnableLogging) Console.WriteLine();
             result = Evaluate(formula,depth+1);
         }
-        
+
+        Debug($"STACK POP[{_runStack.StackCount}]",depth);
         _runStack.Pop();
         return result;
     }
@@ -391,7 +396,7 @@ public class VirtualMachine
                 var value = variables[1];
                 nameType.Scope.Set(nameType.Name, value);
                 
-                //Console.WriteLine("ASSIGNED " + nameType.Name +" : "+ value);
+                Debug("ASSIGNED " + nameType.Name +" : "+ value,depth);
                 
                 result = value;
                 break;
