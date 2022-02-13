@@ -1,16 +1,16 @@
 ﻿namespace Grim.VM;
 
-public sealed class UnknownVariable : IFormula
+public sealed class Unknown : IFormula
 {
     public readonly string Name;
     
-    public UnknownVariable(string name)
+    public Unknown(string name)
     {
         Name = name;
     }
 
     public override string ToString()
     {
-        return nameof(UnknownVariable) + $"<{Name}>";
+        return nameof(Unknown) + $"<{Name}>";
     }
 }

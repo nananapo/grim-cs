@@ -80,7 +80,7 @@ public class VirtualMachine
     {
         //Debug($"EA {target}",depth);
 
-        if (target is UnknownVariable unknown)
+        if (target is Unknown unknown)
         {
             var result =_runStack.GetVariable(unknown.Name);
             if (result is Void)

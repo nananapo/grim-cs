@@ -251,7 +251,7 @@ public class AbstractSyntaxTree
                         break;
                     }
 
-                    result = new UnknownVariable(name);
+                    result = new Unknown(name);
                     break;
                 }
 
