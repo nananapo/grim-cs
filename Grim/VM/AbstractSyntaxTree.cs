@@ -27,7 +27,7 @@ public class AbstractSyntaxTree
         Console.WriteLine($"[AST] {depth} {spaces}{text}");
     }
     
-    public (int index,IFormula formula) NextFormula(List<ExpressionToken> exprs,int index,int depth)
+    public (int index,IFormula formula) NextFormula(List<IToken> exprs,int index,int depth)
     {
         Debug($"NextFormula[{index}] : " + string.Join(",", exprs.Skip(index)),depth);
 
@@ -75,7 +75,7 @@ public class AbstractSyntaxTree
         return (index, result);
     }
 
-    private (bool isMidOperator,int index,Function midOperator) NextMidOperator(List<ExpressionToken> exprs,int index)
+    private (bool isMidOperator,int index,Function midOperator) NextMidOperator(List<IToken> exprs,int index)
     {
         // 範囲チェック
         if(index < 0 || index >= exprs.Count)
@@ -110,7 +110,7 @@ public class AbstractSyntaxTree
         return (true,index+1,function);
     }
 
-    private (int index,IFormula term) NextTerm(List<ExpressionToken> exprs,int index,int depth)
+    private (int index,IFormula term) NextTerm(List<IToken> exprs,int index,int depth)
     {
         List<Function> prefixFuncs;
         (index,prefixFuncs) = ReadFixFunctions(exprs,index,true);
@@ -168,7 +168,7 @@ public class AbstractSyntaxTree
     /// <param name="expr"></param>
     /// <param name="depth"></param>
     /// <returns></returns>
-    private IFormula ReadFormula(ExpressionToken expr,int depth)
+    private IFormula ReadFormula(IToken expr,int depth)
     {
         Debug($"ReadFormula : {expr}",depth);
         
@@ -282,7 +282,7 @@ public class AbstractSyntaxTree
     /// <param name="index"></param>
     /// <param name="isPrefixMode"></param>
     /// <returns></returns>
-    private (int index, List<Function> functions) ReadFixFunctions(List<ExpressionToken> exprs,int index,bool isPrefixMode)
+    private (int index, List<Function> functions) ReadFixFunctions(List<IToken> exprs,int index,bool isPrefixMode)
     {
         var functions = new List<Function>();
         

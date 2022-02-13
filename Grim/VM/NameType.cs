@@ -1,6 +1,6 @@
 ﻿namespace Grim.VM;
 
-public sealed class NameType : IVariable
+public sealed class NameType : IVariable,IFormula
 {
     
     public readonly string Name;

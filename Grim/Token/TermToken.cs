@@ -1,11 +1,11 @@
 namespace Grim.Token;
 
-public class TermToken : ExpressionToken
+public class TermToken : IToken
 {
 
-    public readonly List<ExpressionToken> Expressions;
+    public readonly List<IToken> Expressions;
 
-    public TermToken(List<ExpressionToken> expressions)
+    public TermToken(List<IToken> expressions)
     {
         Expressions = expressions;
     }

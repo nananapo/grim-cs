@@ -19,7 +19,7 @@ public class Tokenizer
         _program = program;
     }
 
-    public List<ExpressionToken> Tokenize()
+    public List<IToken> Tokenize()
     {
         var (_,term) = ReadBody(0,"end",false);
         return term.Expressions;
@@ -92,7 +92,7 @@ public class Tokenizer
 
     private (int index, TermToken terms) ReadBody(int index,string endSymbol,bool requireClose)
     {
-        List<ExpressionToken> exprs = new ();
+        List<IToken> exprs = new ();
 
         while(index < _program.Length && index != -1)
         {
@@ -106,7 +106,7 @@ public class Tokenizer
 
             //Console.WriteLine(index + " : " + str);
 
-            ExpressionToken expr;
+            IToken expr;
             switch(str)
             {
                 case "":

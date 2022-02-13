@@ -2,7 +2,7 @@
 
 namespace Grim.VM;
 
-public class ConstantData<T> : IVariable,ExpressionToken
+public class ConstantData<T> : IVariable,IToken
 {
     public T Value;
     

@@ -2,7 +2,7 @@
 
 namespace Grim.VM;
 
-public sealed class Void : IVariable,ExpressionToken
+public sealed class Void : IVariable,IToken
 {
     private Void()
     {

@@ -2,7 +2,7 @@
 
 namespace grim_interpreter.Token;
 
-public sealed class DelimiterToken : ExpressionToken
+public sealed class DelimiterToken : IToken
 {
     public static readonly DelimiterToken Instance = new ();
 

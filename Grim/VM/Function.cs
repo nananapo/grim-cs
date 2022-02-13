@@ -12,7 +12,7 @@ public class Function : IVariable
 
     public List<VariableToken> Parameters => FunctionToken.Parameters;
 
-    public ExpressionToken Body => FunctionToken.Body;
+    public IToken Body => FunctionToken.Body;
 
     public int Priority => FunctionToken.Priority;
 

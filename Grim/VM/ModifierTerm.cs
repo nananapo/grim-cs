@@ -1,6 +1,4 @@
-﻿using Grim.Token;
-
-namespace Grim.VM;
+﻿namespace Grim.VM;
 
 public class ModifierTerm : IFormula
 {

@@ -36,7 +36,7 @@ public class VirtualMachine
         Console.WriteLine($"[VM]  {depth} {spaces}{text}");
     }
 
-    public IVariable Execute(List<ExpressionToken> exprs,Scope? lexicalScope = null,Dictionary<string,IVariable>? variables = null,int depth = 0)
+    public IVariable Execute(List<IToken> exprs,Scope? lexicalScope = null,Dictionary<string,IVariable>? variables = null,int depth = 0)
     {
         // 省略注意
         if (lexicalScope == null)
@@ -355,7 +355,7 @@ public class VirtualMachine
         }
 
         // 関数を実行
-        var result = Execute(new List<ExpressionToken>{function.Body},function.DefinedScope,dict,depth);
+        var result = Execute(new List<IToken>{function.Body},function.DefinedScope,dict,depth);
         
         //結果を返す
         Debug($"-> {result}",depth);

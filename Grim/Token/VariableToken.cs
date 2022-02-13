@@ -1,6 +1,6 @@
 namespace Grim.Token;
 
-public class VariableToken : ExpressionToken
+public class VariableToken : IToken
 {
 
     public readonly string Name;
