@@ -2,7 +2,7 @@ using Grim.VM;
 
 namespace Grim.Token;
 
-public class FunctionToken : IVariable,ExpressionToken
+public class FunctionToken : ExpressionToken
 {
 
     public readonly FunctionType Type;
