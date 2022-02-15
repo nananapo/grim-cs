@@ -84,13 +84,13 @@ public class VirtualMachine
 
         if (target is Unknown unknown)
         {
-            var result =_runStack.GetVariable(unknown.Name);
-            if (result is Void)
+            if (_runStack.TryGetVariable(unknown.Name,out var result))
             {
-                // 不明ならエラー
-                throw new Exception($"\"{unknown.Name}\"を解決できませんでした");
+                return result;
             }
-            return result;
+            
+            // 不明ならエラー
+            throw new Exception($"\"{unknown.Name}\"を解決できませんでした");
         }
         
         return target switch
@@ -194,7 +194,7 @@ public class VirtualMachine
                 formula.MidOperators.RemoveAt(opIndex);
             }
         }
-        
+
         // 残った項を前から処理する
         foreach (var t in formula.Terms)
         {
@@ -307,20 +307,20 @@ public class VirtualMachine
     /// TODO 関数なら合成
     /// </summary>
     /// <param name="function"></param>
-    /// <param name="formulas"></param>
+    /// <param name="parameters"></param>
     /// <param name="depth"></param>
     /// <returns></returns>
     /// <exception cref="ArgumentException"></exception>
-    private IVariable CallFunction(Function function, IList<IFormula> formulas,int depth)
+    private IVariable CallFunction(Function function, IList<IFormula> parameters,int depth)
     {
         Debug($"EvalFT : {function}",depth);
         
         // 引数の数を確認する
-        if (function.Parameters.Count != formulas.Count)
+        if (function.Parameters.Count != parameters.Count)
             throw new ArgumentException("parameter not match");
         
         // 引数を評価
-        var variables = formulas.Select(f=>Evaluate(f,depth+1)).ToList();
+        var variables = parameters.Select(f=>Evaluate(f,depth+1)).ToList();
 
         var dict = new Dictionary<string, IVariable>();
         for (int i = 0; i < function.Parameters.Count; i++)
@@ -330,7 +330,7 @@ public class VirtualMachine
         }
 
         // 関数を実行
-        var result = Execute(new List<IToken>{function.Body},dict,depth,lexicalScopeId:function.DefinedScopeId);
+        var result = Execute(function.Body,dict,depth,lexicalScopeId:function.DefinedScopeId);
         
         //結果を返す
         Debug($"-> {result}",depth);

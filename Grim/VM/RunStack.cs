@@ -39,11 +39,14 @@ public class RunStack
 
     public void SetVariable(int scopeId, string name, IVariable variable)
     {
+# if DEBUG
+        // TODO GCしたら消えるかも
         if (!_scopes.ContainsKey(scopeId))
         {
             throw new Exception($"illegal scope {scopeId}");
         }
-        _scopes[scopeId].Set(name,variable);
+#endif
+        _scopes[scopeId].Variables[name] = variable;
     }
 
     /// <summary>
@@ -52,7 +55,7 @@ public class RunStack
     /// <param name="name"></param>
     /// <returns>結果、見つからなかったらVoid</returns>
     /// <exception cref="Exception"></exception>
-    public IVariable GetVariable(string name)
+    public bool TryGetVariable(string name,out IVariable result)
     {
         bool isLexicalScope = true;
         
@@ -73,15 +76,38 @@ public class RunStack
         while (currentId != -1)
         {
             var scope = _scopes[currentId];
-            if (scope.TryGet(name,out var result))
+            
+            // 見つけたら返す
+            if (scope.Variables.ContainsKey(name))
             {
-                return result;
+                result = scope.Variables[name];
+                return true;
             }
+            
             currentId = isLexicalScope ? scope.LexicalScopeId : scope.DynamicScopeId;
         }
         
         // 見つからなかったらVoidを返す
-        return Void.Instance;
+        result = Void.Instance;
+        return false;
     }
     
+    private class Scope
+    {
+
+        public readonly int ScopeId;
+    
+        public readonly int LexicalScopeId;
+
+        public readonly int DynamicScopeId; 
+        
+        public readonly Dictionary<string, IVariable> Variables = new();
+
+        public Scope(int id,int lexicalScopeId, int dynamicScopeId)
+        {
+            ScopeId = id;
+            LexicalScopeId = lexicalScopeId;
+            DynamicScopeId = dynamicScopeId;
+        }
+    }
 }

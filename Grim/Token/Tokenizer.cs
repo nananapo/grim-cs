@@ -20,8 +20,8 @@ public class Tokenizer
 
     public List<IToken> Tokenize()
     {
-        var (_,term) = ReadBody(0,"end",false);
-        return term.Expressions;
+        var (_,tokens) = ReadBody(0,"end",false);
+        return tokens;
     }
 
     private (int,FunctionToken) ReadFunctionDefinition(int index,FunctionType type)
@@ -45,10 +45,10 @@ public class Tokenizer
             }
         }
                 
-        TermToken exprs;
-        (index,exprs) = ReadBody(index,"end",true);
+        List<IToken> tokens;
+        (index,tokens) = ReadBody(index,"end",true);
 
-        return (index,new FunctionToken(type,parameters,exprs,priority));
+        return (index,new FunctionToken(type,parameters,tokens,priority));
     }
 
     // スペース区切り
@@ -89,7 +89,7 @@ public class Tokenizer
         return (index,tokens);
     }
 
-    private (int index, TermToken terms) ReadBody(int index,string endSymbol,bool requireClose)
+    private (int index, List<IToken> terms) ReadBody(int index,string endSymbol,bool requireClose)
     {
         List<IToken> exprs = new ();
 
@@ -100,7 +100,7 @@ public class Tokenizer
 
             if(str == endSymbol)
             {
-                return (index,new TermToken(exprs));
+                return (index,exprs);
             }
 
             //Console.WriteLine(index + " : " + str);
@@ -121,8 +121,12 @@ public class Tokenizer
                 case ")":
                     throw new Exception("Unexpected close )");
                 case "(":
-                    (index,expr) = ReadBody(index,")",true);
+                {
+                    List<IToken> innerExprs;
+                    (index,innerExprs) = ReadBody(index,")",true);
+                    expr = new TermToken(innerExprs);
                     break;
+                }
                 case "fun":
                     (index,expr) = ReadFunctionDefinition(index,FunctionType.General);
                     break;
@@ -158,17 +162,17 @@ public class Tokenizer
             // indexがプログラム範囲内で、直後が(なら関数呼び出し
             while(-1 < index && index < _program.Length && _program[index] == '(')
             {
-                TermToken fct;
-                // 引数を読み込む
-                (index,fct) = ReadBody(index+1,")",true);
+                List<IToken> funcBuilder;
+                // 引数の式を読み込む
+                (index,funcBuilder) = ReadBody(index+1,")",true);
                 // 関数呼び出しとして保存
-                expr = new FunctionCallToken(expr,fct.Expressions);
+                expr = new FunctionCallToken(expr,funcBuilder);
             }
             
             exprs.Add(expr);
         }
 
-        return !requireClose ? (-1,new TermToken(exprs)) : throw new Exception("body didn't close before EOF.");
+        return !requireClose ? (-1,exprs) : throw new Exception("body didn't close before EOF.");
     }
 
     /// <summary>

@@ -43,6 +43,8 @@ public class AbstractSyntaxTree
             Function midOp;
             (isMidOperator,index,midOp) = NextMidOperator(exprs,index);
             
+            //Debug($"EndMOP -> {isMidOperator}",depth);
+            
             if(!isMidOperator)
                 break;
             
@@ -77,7 +79,7 @@ public class AbstractSyntaxTree
         // 範囲チェック
         if(index < 0 || index >= exprs.Count)
             return (false,index,null)!;
-        
+
         // 関数定義
         if (exprs[index] is FunctionToken functionToken)
         {
@@ -95,11 +97,10 @@ public class AbstractSyntaxTree
             return (false,index,null)!;
         }
 
-        var searchResult = _runStack.GetVariable(variable.Name);
-        
         // 関数ではないか
         // 中値演算子ではないなら終了
-        if(searchResult is not Function function ||
+        if(!_runStack.TryGetVariable(variable.Name,out var searchResult) ||
+           searchResult is not Function function ||
            function.Type != FunctionType.Mid)
             return (false,index,null)!;
         
@@ -189,14 +190,23 @@ public class AbstractSyntaxTree
             case TermToken term:
             {
                 int index = 0;
-                var formulas = new List<IFormula>();
+                /* TODO (A B)みたいなのは禁止
+                var terms = new List<IFormula>();
+                
                 while (-1 < index && index < term.Expressions.Count)
                 {
                     IFormula formula;
                     (index,formula) = NextFormula(term.Expressions,index,depth+1);
-                    formulas.Add(formula);
+                    terms.Add(formula);
                 }
-                result = new Formula(formulas,new List<Function>());
+                
+                result = new Formula(terms,new List<Function>());
+                */
+                (index,result) = NextFormula(term.Expressions,0,depth+1);
+                if (index != -1)
+                {
+                    throw new Exception("括弧の中で、2つ以上の式を並べることはできません。");
+                }
                 break;
             }
             case FunctionCallToken funcCall:
@@ -224,52 +234,44 @@ public class AbstractSyntaxTree
             case VariableToken variable:
             {
                 var name = variable.Name;
-                var searchResult = _runStack.GetVariable(name);
 
-                if(searchResult is Void)
+                // 変数を見つけたら返す
+                if(_runStack.TryGetVariable(name,out var searchResult))
                 {
-                    // ;から始まるならば名前型
-                    // TODO Tokenizerでどうにかしたい
-                    if (name[0] == Tokenizer.NameTypePrefix)
+                    result = searchResult;
+                    break;
+                }
+
+                // ;から始まるならば名前型
+                // TODO Tokenizerでどうにかしたい
+                if (name[0] == Tokenizer.NameTypePrefix)
+                {
+                    if (name.Length == 1)
                     {
-                        if (name.Length == 1)
-                        {
-                            throw new Exception(";の後には識別子が必要です");
-                        }
+                        throw new Exception(";の後には識別子が必要です");
+                    }
                         
-                        result = new NameType(name.Substring(1),_runStack.Now);
-                        break;
-                    }
-                    
-                    // builtin
-                    if (BuiltInFunction.TryParse(name, out var builtInFunction))
-                    {
-                        result = builtInFunction;
-                        break;
-                    }
-                    
-                    // 数字の可能性
-                    if(int.TryParse(name,out int value))
-                    {
-                        result = new ConstantData<int>(value);
-                        break;
-                    }
-
-                    result = new Unknown(name);
+                    result = new NameType(name.Substring(1),_runStack.Now);
                     break;
                 }
-
-                // 変数が関数なら、関数をそのまま渡す
-                if(searchResult is Function func)
+                    
+                // builtin
+                if (BuiltInFunction.TryParse(name, out var builtInFunction))
                 {
-                    result = func;
+                    result = builtInFunction;
+                    break;
+                }
+                    
+                // 数字の可能性
+                if(int.TryParse(name,out int value))
+                {
+                    result = new ConstantData<int>(value);
                     break;
                 }
 
-                result = searchResult;
+                result = new Unknown(name);
                 break;
             }
-            case DelimiterToken:
             default:
                 throw new NotImplementedException(expr.ToString());
         }
@@ -314,12 +316,11 @@ public class AbstractSyntaxTree
                 return (index,functions);
             }
             
-            // 変数なら検索する
-            var searchResult = _runStack.GetVariable(variable.Name);
-
+            // 見つからなかったら終了
             // 関数ではないか
             // 前置演算子でも後置演算子でもない場合は終了
-            if(searchResult is not Function func ||
+            if(!_runStack.TryGetVariable(variable.Name, out var searchResult) ||
+                searchResult is not Function func ||
                !(func.Type == FunctionType.Prefix && isPrefixMode) 
                && !(func.Type == FunctionType.Suffix && !isPrefixMode))
             {
