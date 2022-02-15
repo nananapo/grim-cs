@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics;
+using Grim.Errors;
 using Grim.Token;
 using Grim.VM;
 using Void = Grim.VM.Void;
@@ -54,7 +55,7 @@ public class AbstractSyntaxTree
         // 中値演算子の数が合わないならエラー
         if (terms.Count - 1 != midOperators.Count)
         {
-            throw new Exception($"中値演算子の数は項の数-1である必要があります\n 項の数 : {terms.Count}\n 中値演算子の数 : {midOperators.Count}");
+            throw new ParseException($"中値演算子の数は項の数-1である必要があります\n 項の数 : {terms.Count}\n 中値演算子の数 : {midOperators.Count}");
         }
 
         IFormula result;
@@ -205,7 +206,7 @@ public class AbstractSyntaxTree
                 (index,result) = NextFormula(term.Expressions,0,depth+1);
                 if (index != -1)
                 {
-                    throw new Exception("括弧の中で、2つ以上の式を並べることはできません。");
+                    throw new ParseException("括弧の中で、2つ以上の式を並べることはできません。");
                 }
                 break;
             }
@@ -248,7 +249,7 @@ public class AbstractSyntaxTree
                 {
                     if (name.Length == 1)
                     {
-                        throw new Exception(";の後には識別子が必要です");
+                        throw new ParseException(Tokenizer.NameTypePrefix + "の後には1文字以上の文字が必要です");
                     }
                         
                     result = new NameType(name.Substring(1),_runStack.Now);

@@ -1,3 +1,5 @@
+using Grim.Errors;
+
 namespace Grim.Token;
 
 public class Tokenizer
@@ -32,7 +34,7 @@ public class Tokenizer
             string token;
             (index,token) = ReadToken(index);
             if(!int.TryParse(token,out priority))
-                throw new Exception("Failed to parse operator priority.");
+                throw new ParseException("オペレーターの優先度をパースできませんでした。\n優先度は整数である必要があります。");
         }
 
         List<string> parameterNames = new ();
@@ -65,20 +67,23 @@ public class Tokenizer
                 case ")":
                     return (index,names);
                 case ";":
+                case "@":
+                case ":":
                 case "\"":
                 case "fun":
                 case "opp":
                 case "opm":
                 case "ops":
+                case "end":
                     // TODO 他にも使えないtokenがあるはず
-                    throw new Exception("Parameter illegal symbol");
+                    throw new IllegalParameterNameException(token);
             }
-            
-            if(index == -1)
-                throw new Exception("Parameter EOF");
+
+            if (index == -1)
+                throw new EOFException();
 
             if (names.Contains(token))
-                throw new Exception("同じ名前の引数を複数個定義することはできません");
+                throw new ParameterNameAlreadyDefinedException(token);
 
             names.Add(token);
         }
@@ -116,7 +121,7 @@ public class Tokenizer
                     expr = DelimiterToken.Instance;
                     break;
                 case ")":
-                    throw new Exception("Unexpected close )");
+                    throw new IllegalBracketCloseException();
                 case "(":
                 {
                     List<IToken> innerExprs;
@@ -169,7 +174,7 @@ public class Tokenizer
             exprs.Add(expr);
         }
 
-        return !requireClose ? (-1,exprs) : throw new Exception("body didn't close before EOF.");
+        return !requireClose ? (-1, exprs) : throw new EOFException();
     }
 
     /// <summary>
@@ -178,12 +183,13 @@ public class Tokenizer
     /// <param name="index">開始インデックス</param>
     /// <param name="endSymbol">終了シンボル</param>
     /// <returns></returns>
-    /// <exception cref="Exception"></exception>
     private (int index,string str) ReadString(int index,char endSymbol)
     {
         // index
-        if(index == -1 || index >= _program.Length) 
-            return (-1,"");
+        if (index == -1 || index >= _program.Length)
+        {
+            throw new EOFException();
+        }
 
         bool readEscapeSequence = false;
         string token = "";
@@ -205,7 +211,7 @@ public class Tokenizer
                     '\\' => "\\",
                     '\"' => "\"",
                     // エスケープ文字ではないならエラー
-                    _ => throw new Exception($"Unknown escape symbol : {str}")
+                    _ => throw new IllegalEscapeSequenceException(str.ToString())
                 };
                 readEscapeSequence = false;
             }
@@ -226,7 +232,7 @@ public class Tokenizer
             }
         }
 
-        throw new Exception("EOF : string not closed.");
+        throw new EOFException();
     }
 
     private int SkipSpace(int index)
