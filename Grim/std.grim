@@ -1,11 +1,14 @@
-﻿__assign(:=; opm 0(name value) __assign(name; value) end)
+﻿__assign(:=; opm 3(name value) __assign(name; value) end)
 
-:// = opp 0(comment) end; // "前置演算子の定義の時は;を忘れずに！ 後ろの名前型が巻き込まれます！"
+:// = opp 0(comment) end;
+:$  = opm 1(fn va) fn(va) end 
+:== = opm 4(va1 va2) __equal(va1; va2) end
+:!= = opm 4(va1 va2) !(va1 == va2) end
 :+  = opm -5(va1 va2) __add(va1; va2) end
 :-  = opm -5(va1 va2) va1 + __negate(va2) end
-:== = opm 1(va1 va2) __equal(va1; va2) end
-:!= = opm 1(va1 va2) !(va1 == va2) end
-:!  = opp 6(va) 0 == va end;
+:!  = opp 10(va) 0 == va end;
+
+
 
 // "関数"
 :print = fun(text) __put(text + "\n") end
