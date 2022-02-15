@@ -1,3 +1,5 @@
+using Grim.VM;
+
 namespace Grim.Token;
 
 public class FunctionToken : IToken
@@ -5,7 +7,7 @@ public class FunctionToken : IToken
 
     public readonly FunctionType Type;
 
-    public readonly List<VariableToken> Parameters;
+    public readonly IList<string> Parameters;
 
     public readonly List<IToken> Body;
 
@@ -13,7 +15,9 @@ public class FunctionToken : IToken
 
     public readonly bool IsLeftAssociative;
 
-    public FunctionToken(FunctionType type,List<VariableToken> parameters,List<IToken> body,int priority)
+    public BuiltInFunctionType BuiltInFunctionType;
+
+    public FunctionToken(FunctionType type,IList<string> parameters,List<IToken> body,int priority)
     {
         Type = type;
         Parameters = parameters;
@@ -27,6 +31,13 @@ public class FunctionToken : IToken
         if(Type == FunctionType.Mid && Parameters.Count != 2)
             throw new Exception("mid operator function must have two parameter.");
 
+    }
+
+    public FunctionToken(BuiltInFunctionType builtInFunctionType)
+    {
+        Type = FunctionType.BuiltIn;
+        BuiltInFunctionType = builtInFunctionType;
+        Parameters = new string[BuiltInFunctionHelper.BuiltInFunctionParameterCounts[builtInFunctionType]];
     }
 
     public override string ToString()

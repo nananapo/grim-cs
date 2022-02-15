@@ -26,7 +26,6 @@ public class Tokenizer
 
     private (int,FunctionToken) ReadFunctionDefinition(int index,FunctionType type)
     {
-
         int priority = -1;
         if(type != FunctionType.General)
         {
@@ -36,26 +35,25 @@ public class Tokenizer
                 throw new Exception("Failed to parse operator priority.");
         }
 
-        List<VariableToken> parameters = new ();
+        List<string> parameterNames = new ();
         if(index < _program.Length)
         {
             if(_program[index] == '(')
             {
-                (index,parameters) = ReadFunctionParameterDefinition(index+1);
+                (index,parameterNames) = ReadFunctionParameterDefinition(index+1);
             }
         }
                 
         List<IToken> tokens;
         (index,tokens) = ReadBody(index,"end",true);
 
-        return (index,new FunctionToken(type,parameters,tokens,priority));
+        return (index,new FunctionToken(type,parameterNames,tokens,priority));
     }
 
     // スペース区切り
-    private (int index,List<VariableToken> func) ReadFunctionParameterDefinition(int index)
+    private (int index,List<string> func) ReadFunctionParameterDefinition(int index)
     {
         var names = new List<string>();
-        var tokens = new List<VariableToken>();
 
         while(index < _program.Length)
         {
@@ -65,7 +63,7 @@ public class Tokenizer
             switch(token)
             {
                 case ")":
-                    return (index,tokens);
+                    return (index,names);
                 case ";":
                 case "\"":
                 case "fun":
@@ -83,10 +81,9 @@ public class Tokenizer
                 throw new Exception("同じ名前の引数を複数個定義することはできません");
 
             names.Add(token);
-            tokens.Add(new VariableToken(token));
         }
 
-        return (index,tokens);
+        return (index,names);
     }
 
     private (int index, List<IToken> terms) ReadBody(int index,string endSymbol,bool requireClose)

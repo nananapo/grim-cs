@@ -98,7 +98,6 @@ public class VirtualMachine
             // 定数
             ConstantData<string> value => value,
             ConstantData<int> value => value,
-            BuiltInFunction func => func,
             
             Formula formula => EvaluateFormula(formula, depth),
             FunctionCall call => Evaluate(call, depth),
@@ -219,11 +218,6 @@ public class VirtualMachine
         {
             result = CallFunction(function,funcCall.Parameters,depth+1);
         }
-        // builtin
-        else if (body is BuiltInFunction primitive)
-        {
-            result = CallPrimitiveFunction(primitive, funcCall.Parameters, depth + 1);
-        }
         // それ以外ならエラー
         else
         {
@@ -315,23 +309,96 @@ public class VirtualMachine
     {
         Debug($"EvalFT : {function}",depth);
         
-        // 引数の数を確認する
-        if (function.Parameters.Count != parameters.Count)
-            throw new ArgumentException("parameter not match");
-        
-        // 引数を評価
-        var variables = parameters.Select(f=>Evaluate(f,depth+1)).ToList();
-
-        var dict = new Dictionary<string, IVariable>();
-        for (int i = 0; i < function.Parameters.Count; i++)
+        // 引数の数が多すぎる
+        var nc = function.AppliedParameterVariables.Count + parameters.Count;
+        if (nc > function.Parameters.Count)
         {
-            var pName = function.Parameters[i].Name;
-            dict[pName] = variables[i];　//TODO 参照渡し->名前の参照渡し？
+            throw new ArgumentException($"関数に対して多すぎる引数を割り当てようとしています");
         }
 
-        // 関数を実行
-        var result = Execute(function.Body,dict,depth,lexicalScopeId:function.DefinedScopeId);
+        IVariable result;
         
+        // 引数の数が足りないなら一部を適用して関数を返す
+        if (nc < function.Parameters.Count)
+        {
+            // 新しく割り当てる引数の数が0個ならそのまま返す
+            if (parameters.Count == 0)
+            {
+                result = function;
+            }
+            // 割り当てる
+            else
+            {
+                // リストに追加
+                var applied = new List<IVariable>(function.AppliedParameterVariables);
+                foreach (var formula in parameters)
+                {
+                    var variable = Evaluate(formula, depth + 1);
+                    applied.Add(variable);
+                }
+
+                // 新しくFunctionを生成
+                if (function.Type == FunctionType.BuiltIn)
+                {
+                    result = new Function(function.BuiltInFunctionType);
+                }
+                else
+                {
+                    result = new Function(function.DefinedScopeId,function.FunctionToken);
+                }
+
+                ((Function) result).AppliedParameterVariables = applied;
+            }
+
+            Debug($"-> {result}",depth);
+            return result;
+        }
+        
+        // 引数の数がピッタリ
+
+        // 引数がない
+        if (nc == 0)
+        {
+            if (function.Type == FunctionType.BuiltIn)
+            {
+                result = CallPrimitiveFunction(function.BuiltInFunctionType, Array.Empty<IVariable>(), depth + 1);
+            }
+            else
+            {
+                result = Execute(function.Body, depth: depth + 1, lexicalScopeId: function.DefinedScopeId);
+            }
+        }
+        // 新しく適用されたもののみ
+        else
+        {
+            List<IVariable> variables = 
+                nc == parameters.Count ? new () : new List<IVariable>(function.AppliedParameterVariables);
+            
+            // 新しく割り当て
+            foreach (var t in parameters)
+            {
+                variables.Add(Evaluate(t,depth+1));
+            }
+            
+            // 実行
+            if (function.Type == FunctionType.BuiltIn)
+            {
+                result = CallPrimitiveFunction(function.BuiltInFunctionType, variables, depth + 1);
+            }
+            else
+            {
+                // 辞書にする
+                var dict = new Dictionary<string, IVariable>();
+                for (int i = 0; i < function.Parameters.Count; i++)
+                {
+                    dict[function.Parameters[i]] = variables[i];
+                }
+
+                result = Execute(function.Body, dict, depth: depth + 1, lexicalScopeId: function.DefinedScopeId);
+            }
+            
+        }
+
         //結果を返す
         Debug($"-> {result}",depth);
         return result;
@@ -340,21 +407,18 @@ public class VirtualMachine
     /// <summary>
     /// ビルトイン関数を呼ぶ
     /// </summary>
-    /// <param name="builtIn"></param>
-    /// <param name="parameters"></param>
+    /// <param name="builtInFunctionType"></param>
+    /// <param name="variables"></param>
     /// <param name="depth"></param>
     /// <returns></returns>
     /// <exception cref="ArgumentException"></exception>
     /// <exception cref="NotImplementedException"></exception>
-    private IVariable CallPrimitiveFunction(BuiltInFunction builtIn, List<IFormula> parameters,int depth)
+    private IVariable CallPrimitiveFunction(BuiltInFunctionType builtInFunctionType, IList<IVariable> variables,int depth)
     {        
-        Debug($"EvalP : {builtIn}",depth);
-
-        // とりあえず評価しておく
-        var variables = parameters.Select(f=>Evaluate(f,depth+1)).ToList();
+        Debug($"EvalP : {builtInFunctionType}",depth);
 
         IVariable result;
-        switch (builtIn.Function)
+        switch (builtInFunctionType)
         {
             case BuiltInFunctionType.Assign:
             {
