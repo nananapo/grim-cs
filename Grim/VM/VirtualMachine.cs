@@ -198,8 +198,8 @@ public class VirtualMachine
             {
                 // 右結合
                 // 混在は左結合
-                var fun = ops[associative == -1 ? ^(i + 1) : i];
-                var opIndex = formula.MidOperators.IndexOf(fun);
+                var fun = ops[associative == 1? ^(i + 1) : i];
+                var opIndex = associative == 1 ? formula.MidOperators.LastIndexOf(fun) : formula.MidOperators.IndexOf(fun);
 
                 var t1 = formula.Terms[opIndex];
                 var t2 = formula.Terms[opIndex + 1];
