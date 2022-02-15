@@ -10,28 +10,22 @@ public class VirtualMachine
 
     private readonly RunStack _runStack = new();
 
-    public bool EnableLogging = false;
-
     private readonly Action<string> _outputFunction;
 
     private readonly Func<string?> _inputFunction;
 
     private readonly AbstractSyntaxTree _ast;
 
-    public VirtualMachine(Action<string>? outputFunc = null,Func<string?>? inputFunc = null,bool enableLogging = false)
+    public VirtualMachine(Action<string>? outputFunc = null,Func<string?>? inputFunc = null)
     {
         _outputFunction = outputFunc ?? Console.Write;
         _inputFunction = inputFunc ?? Console.ReadLine;
-        
-        EnableLogging = enableLogging;
-        _ast = new(_runStack,enableLogging:enableLogging);
+        _ast = new(_runStack);
     }
     
     [Conditional("DEBUG")] 
     private void Debug(string text, int depth)
     {
-        if (!EnableLogging) return;
-        
         var spaces = "";
         for (int i = 0; i < depth; i++)
             spaces += "  ";
@@ -39,21 +33,20 @@ public class VirtualMachine
         Console.WriteLine($"[VM]  {depth} {spaces}{text}");
     }
     
-    public IVariable Execute(List<IToken> exprs,Scope? lexicalScope = null,Dictionary<string,IVariable>? variables = null,int depth = 0)
+    public IVariable Execute(List<IToken> exprs,Scope? lexicalScope = null,Dictionary<string,IVariable>? variables = null,int depth = 0,bool enableStack = true)
     {
-        // 省略注意
-        if (lexicalScope == null)
+
+        if (enableStack)
         {
-            lexicalScope = _runStack.Root;
+            // 省略注意
+            lexicalScope ??= _runStack.Root;
+            // スタックする
+            _runStack.Push(lexicalScope);
         }
-        
-        // スタックする
-        _runStack.Push(lexicalScope);
       
         Debug($"STACK PUSH[{_runStack.StackCount}]",depth);
 
         // 引数を環境に入れる
-        // TODO 静的スコープ
         if (variables != null)
         {
             foreach (var (name,variable) in variables)
@@ -69,17 +62,21 @@ public class VirtualMachine
         {
             IFormula formula;
 #if DEBUG
-            if(EnableLogging) Console.WriteLine();
+            Console.WriteLine();
 #endif
             (index,formula) = _ast.NextFormula(exprs,index,0);
 #if DEBUG
-            if(EnableLogging) Console.WriteLine();
+            Console.WriteLine();
 #endif
             result = Evaluate(formula,depth+1);
         }
 
         Debug($"STACK POP[{_runStack.StackCount}]",depth);
-        _runStack.Pop();
+
+        if (enableStack)
+        {
+            _runStack.Pop();
+        }
         return result;
     }
 
@@ -550,6 +547,50 @@ public class VirtualMachine
                 }
 
                 result = Void.Instance;
+                break;
+            }
+            case BuiltInFunctionType.ReadFile:
+            {
+                if (variables.Count != 1)
+                    throw new ArgumentException("parameter not match");
+                
+                var va = variables[0];
+                if (va is not ConstantData<string> data)
+                {
+                    throw new ParameterTypeException("__read", va);
+                }
+
+                var fileName = data.Value;
+                
+                // 読めなかったらVoid
+                if (!File.Exists(fileName))
+                {
+                    result = Void.Instance;
+                    break;
+                }
+                
+                var str = File.ReadAllText(fileName);
+                result = new ConstantData<string>(str);
+                break;
+            }
+            case BuiltInFunctionType.Eval:
+            {
+                if (variables.Count != 1)
+                    throw new ArgumentException("parameter not match");
+                
+                var va = variables[0];
+                if (va is not ConstantData<string> data)
+                {
+                    throw new ParameterTypeException("__eval", va);
+                }
+
+                var program = data.Value;
+                
+                // stackなし呼び出し
+                var tokenizer = new Tokenizer(program);
+                var term = tokenizer.Tokenize();
+                result = Execute(term,enableStack:false);
+                
                 break;
             }
             default:

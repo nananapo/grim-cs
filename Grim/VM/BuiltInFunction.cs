@@ -47,6 +47,12 @@ public  class BuiltInFunction : IVariable
             case "__while":
                 builtInFunction = Create(BuiltInFunctionType.While);
                 break;
+            case "__read":
+                builtInFunction = Create(BuiltInFunctionType.ReadFile);
+                break;
+            case "__eval":
+                builtInFunction = Create(BuiltInFunctionType.Eval);
+                break;
             default:
                 builtInFunction = null;
                 return false;

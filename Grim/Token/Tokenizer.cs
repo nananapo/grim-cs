@@ -6,8 +6,10 @@ public class Tokenizer
     public const char NameTypePrefix = ':';
     
     public const char DynamicScopePrefix = '@';
+
+    public const string SpaceSymbols = " \t\n\r\f";
     
-    public const string Symbol = ";()\" \t\n";
+    public const string Symbol = ";()\"" + " \t\n\r\f";
 
     private readonly string _program;
 
@@ -110,6 +112,8 @@ public class Tokenizer
                 case " ":
                 case "\t":
                 case "\n":
+                case "\r":
+                case "\f":
                     continue;
                 case ";":
                     expr = DelimiterToken.Instance;
@@ -231,7 +235,7 @@ public class Tokenizer
         
         while(index < _program.Length)
         {
-            if(_program[index] != ' ' && _program[index] != '\t' && _program[index] != '\n')
+            if(!SpaceSymbols.Contains(_program[index]))
             {
                 return index;
             }

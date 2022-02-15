@@ -62,7 +62,7 @@ public static class Test
             if (iIndex >= inputs.Length)
                 throw new Exception($"Assertion Failed : input call count\n expected : {inputs.Length}");
             return inputs[iIndex++];
-        },enableLogging:true);
+        });
 
         
         Log("-------------Excursion Result-------------");

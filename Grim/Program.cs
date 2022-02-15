@@ -25,26 +25,6 @@ switch (args[0])
         vm.Execute(term);
         break;
     }
-    case "debug":
-    {
-        if (args.Length != 2)
-        {
-            Console.WriteLine("Usage: debug [program file path]");
-            return;
-        }
-        
-        var fileName = args[1];
-        var program = string.Join("\n",File.ReadAllLines(fileName));
-        
-        var tokenizer = new Tokenizer(program);
-        var term = tokenizer.Tokenize();
-        
-        Console.WriteLine(string.Join(",",term));
-        
-        var vm = new VirtualMachine(enableLogging:true);
-        vm.Execute(term);
-        break;
-    }
     case "test":
         
         if (args.Length != 2)

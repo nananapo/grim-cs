@@ -11,3 +11,4 @@
 :print = fun(text) __put(text + "\n") end
 :if = __if
 :while = __while
+:import = fun(fileName) __eval(__read(fileName)) end

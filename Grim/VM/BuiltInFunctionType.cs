@@ -9,5 +9,7 @@ public enum BuiltInFunctionType
     Negate,
     Equal,
     If,
-    While
+    While,
+    ReadFile,
+    Eval
 }
