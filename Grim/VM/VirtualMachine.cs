@@ -33,15 +33,13 @@ public class VirtualMachine
         Console.WriteLine($"[VM]  {depth} {spaces}{text}");
     }
     
-    public IVariable Execute(List<IToken> exprs,Scope? lexicalScope = null,Dictionary<string,IVariable>? variables = null,int depth = 0,bool enableStack = true)
+    public IVariable Execute(List<IToken> exprs,Dictionary<string,IVariable>? variables = null,int depth = 0,int lexicalScopeId = 0,bool enableStack = true)
     {
 
         if (enableStack)
         {
-            // 省略注意
-            lexicalScope ??= _runStack.Root;
             // スタックする
-            _runStack.Push(lexicalScope);
+            _runStack.Push(lexicalScopeId);
         }
       
         Debug($"STACK PUSH[{_runStack.StackCount}]",depth);
@@ -51,7 +49,7 @@ public class VirtualMachine
         {
             foreach (var (name,variable) in variables)
             {
-                _runStack.Now.Set(name,variable);
+                _runStack.SetVariable(_runStack.Now,name,variable);
             }
         }
 
@@ -86,13 +84,13 @@ public class VirtualMachine
 
         if (target is Unknown unknown)
         {
-            var result =_runStack.GetVariable(unknown.Name);
-            if (result is Void)
+            if (_runStack.TryGetVariable(unknown.Name,out var result))
             {
-                // 不明ならエラー
-                throw new Exception($"\"{unknown.Name}\"を解決できませんでした");
+                return result;
             }
-            return result;
+            
+            // 不明ならエラー
+            throw new Exception($"\"{unknown.Name}\"を解決できませんでした");
         }
         
         return target switch
@@ -117,110 +115,90 @@ public class VirtualMachine
         Debug($"EvalF : {formula}",depth);
         
         IVariable result = Void.Instance;
-        
+
+        // 項が0個
         if (formula.Terms.Count == 0)
         {
-            // TODO 関数として返す?
-            // TODO 関数の塊として返す?
-            if (formula.MidOperators.Count != 0)
+            if (formula.MidOperators.Count == 0)
+            {
+                result = Void.Instance;
+            }
+            // 最後の関数を返す
+            else if (formula.MidOperators.Count == 1)
+            {
+                result = formula.MidOperators[^1];
+            }
+            else
+            {
                 throw new Exception("中値演算子が不正な位置にあります");
-
+            }
+            
+            Debug($"-> {result}",depth);
+            return result;
+        } 
+        else if (formula.Terms.Count == 1)
+        {
+            result = Evaluate(formula.Terms[0], depth + 1);
             Debug($"-> {result}",depth);
             return result;
         }
-        
-        var terms = formula.Terms.ToList();
-        var ops = formula.MidOperators.ToList();
-        
-        while (terms.Count > 1 && ops.Count > 0)
-        {
-            var max = ops.Select(v => Math.Abs(v.Priority)).Max();
-            
-            var lefts = ops.Where(v => v.Priority == max && v.IsLeftAssociative).ToList();
-            var rights = ops.Where(v => v.Priority == max && !v.IsLeftAssociative).ToList();
 
-            // すべてが右結合の場合
-            if (lefts.Count == 0)
+        // priorityで辞書にする
+        var priorityAssociative = new Dictionary<int, int>();// -1 左 , 0 混在 , 1  右
+        var priorityDict = new Dictionary<int, List<Function>>();
+        
+        foreach(var op in formula.MidOperators)
+        {
+            if (!priorityDict.ContainsKey(op.Priority))
             {
-                // 右結合は後ろから処理する
-                // TODO ソート必要？
-                while (rights.Count > 0)
-                {
-                    var fun = rights[^1];
-                    var opIndex = ops.IndexOf(fun);
-                    var t1 = terms[opIndex];
-                    var t2 = terms[opIndex + 1];
-                    
-                    terms[opIndex] = CallFunction(fun, new List<IFormula> {t1, t2}, depth + 1);
-                    
-                    // 削除
-                    terms.RemoveAt(opIndex+1);
-                    ops.RemoveAt(opIndex);
-                    rights.RemoveAt(rights.Count-1);
-                }
+                priorityDict[op.Priority] = new(){op};
+                priorityAssociative[op.Priority] = op.IsLeftAssociative ? -1 : 1;
             }
-            // すべてが左結合の場合
-            else if (rights.Count == 0)
-            {
-                // 左結合は前から処理する
-                // TODO ソート必要？
-                while (lefts.Count > 0)
-                {
-                    var fun = lefts[0];
-                    var opIndex = ops.IndexOf(fun);
-                    var t1 = terms[opIndex];
-                    var t2 = terms[opIndex + 1];
-                    
-                    terms[opIndex] = CallFunction(fun, new List<IFormula> {t1, t2}, depth + 1);
-                    
-                    // 削除
-                    terms.RemoveAt(opIndex+1);
-                    ops.RemoveAt(opIndex);
-                    lefts.RemoveAt(0);
-                }
-            }
-            // 混ざっている
-            // 左結合→右結合
             else
             {
-                // 左結合を処理
-                while (lefts.Count > 0)
+                priorityDict[op.Priority].Add(op);
+                
+                var now = priorityAssociative[op.Priority];
+                var to = op.IsLeftAssociative ? -1 : 1;
+                if (now != 0 && now != to)
                 {
-                    var fun = lefts[0];
-                    var opIndex = ops.IndexOf(fun);
-                    var t1 = terms[opIndex];
-                    var t2 = terms[opIndex + 1];
-                    
-                    terms[opIndex] = CallFunction(fun, new List<IFormula> {t1, t2}, depth + 1);
-                    
-                    // 削除
-                    terms.RemoveAt(opIndex+1);
-                    ops.RemoveAt(opIndex);
-                    lefts.RemoveAt(0);
-                }
-                // 右結合を処理
-                while (rights.Count > 0)
-                {
-                    var fun = rights[^1];
-                    var opIndex = ops.IndexOf(fun);
-                    var t1 = terms[opIndex];
-                    var t2 = terms[opIndex + 1];
-                    
-                    terms[opIndex] = CallFunction(fun, new List<IFormula> {t1, t2}, depth + 1);
-                    
-                    // 削除
-                    terms.RemoveAt(opIndex+1);
-                    ops.RemoveAt(opIndex);
-                    rights.RemoveAt(rights.Count-1);
+                    priorityAssociative[op.Priority] = 0;
                 }
             }
         }
         
-        // 残った項を前から処理する
-        while(terms.Count > 0)
+        //priorityを昇順にする
+        var priorities = priorityDict.Keys.ToList();
+        priorities.Sort();
+        priorities.Reverse();
+
+        foreach (var priority in priorities)
         {
-            result = Evaluate(terms[0], depth + 1);
-            terms.RemoveAt(0);
+            var ops = priorityDict[priority];
+            var associative = priorityAssociative[priority];
+
+            for (int i = 0; i < ops.Count; i++)
+            {
+                // 右結合
+                // 混在は左結合
+                var fun = ops[associative == -1 ? ^(i + 1) : i];
+                var opIndex = formula.MidOperators.IndexOf(fun);
+
+                var t1 = formula.Terms[opIndex];
+                var t2 = formula.Terms[opIndex + 1];
+
+                formula.Terms[opIndex] = CallFunction(fun, new List<IFormula> {t1, t2}, depth + 1);
+
+                // 削除
+                formula.Terms.RemoveAt(opIndex + 1);
+                formula.MidOperators.RemoveAt(opIndex);
+            }
+        }
+
+        // 残った項を前から処理する
+        foreach (var t in formula.Terms)
+        {
+            result = Evaluate(t, depth + 1);
         }
         
         Debug($"-> {result}",depth);
@@ -329,20 +307,20 @@ public class VirtualMachine
     /// TODO 関数なら合成
     /// </summary>
     /// <param name="function"></param>
-    /// <param name="formulas"></param>
+    /// <param name="parameters"></param>
     /// <param name="depth"></param>
     /// <returns></returns>
     /// <exception cref="ArgumentException"></exception>
-    private IVariable CallFunction(Function function, IList<IFormula> formulas,int depth)
+    private IVariable CallFunction(Function function, IList<IFormula> parameters,int depth)
     {
         Debug($"EvalFT : {function}",depth);
         
         // 引数の数を確認する
-        if (function.Parameters.Count != formulas.Count)
+        if (function.Parameters.Count != parameters.Count)
             throw new ArgumentException("parameter not match");
         
         // 引数を評価
-        var variables = formulas.Select(f=>Evaluate(f,depth+1)).ToList();
+        var variables = parameters.Select(f=>Evaluate(f,depth+1)).ToList();
 
         var dict = new Dictionary<string, IVariable>();
         for (int i = 0; i < function.Parameters.Count; i++)
@@ -352,7 +330,7 @@ public class VirtualMachine
         }
 
         // 関数を実行
-        var result = Execute(new List<IToken>{function.Body},function.DefinedScope,dict,depth);
+        var result = Execute(function.Body,dict,depth,lexicalScopeId:function.DefinedScopeId);
         
         //結果を返す
         Debug($"-> {result}",depth);
@@ -391,7 +369,7 @@ public class VirtualMachine
                 }
 
                 var value = variables[1];
-                nameType.Scope.Set(nameType.Name, value);
+                _runStack.SetVariable(nameType.DefinedScopeId,nameType.Name, value);
 
                 Debug("ASSIGNED " + nameType.Name + " : " + value, depth);
 

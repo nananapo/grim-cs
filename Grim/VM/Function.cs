@@ -4,7 +4,7 @@ namespace Grim.VM;
 
 public class Function : IVariable
 {
-    public readonly Scope DefinedScope;
+    public readonly int DefinedScopeId;
 
     public readonly FunctionToken FunctionToken;
     
@@ -12,15 +12,15 @@ public class Function : IVariable
 
     public List<VariableToken> Parameters => FunctionToken.Parameters;
 
-    public IToken Body => FunctionToken.Body;
+    public List<IToken> Body => FunctionToken.Body;
 
     public int Priority => FunctionToken.Priority;
 
     public bool IsLeftAssociative => FunctionToken.IsLeftAssociative;
 
-    public Function(Scope definedScope, FunctionToken functionToken)
+    public Function(int definedScopeId, FunctionToken functionToken)
     {
-        DefinedScope = definedScope;
+        DefinedScopeId = definedScopeId;
         FunctionToken = functionToken;
     }
 }
