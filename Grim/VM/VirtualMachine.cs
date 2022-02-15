@@ -135,6 +135,12 @@ public class VirtualMachine
             
             Debug($"-> {result}",depth);
             return result;
+        } 
+        else if (formula.Terms.Count == 1)
+        {
+            result = Evaluate(formula.Terms[0], depth + 1);
+            Debug($"-> {result}",depth);
+            return result;
         }
 
         // priorityで辞書にする

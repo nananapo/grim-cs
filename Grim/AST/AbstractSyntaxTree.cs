@@ -107,6 +107,13 @@ public class AbstractSyntaxTree
         return (true,index+1,function);
     }
 
+    /// <summary>
+    /// 項を読む
+    /// </summary>
+    /// <param name="exprs"></param>
+    /// <param name="index"></param>
+    /// <param name="depth"></param>
+    /// <returns></returns>
     private (int index,IFormula term) NextTerm(in List<IToken> exprs,int index,int depth)
     {
         List<Function> prefixFuncs;
@@ -142,7 +149,7 @@ public class AbstractSyntaxTree
         }
 
         // 本体を読む
-        IFormula midTerm = ReadFormula(exprs[index],depth+1);
+        IFormula midTerm = ReadMidTerm(exprs[index],depth+1);
         
         // 後置演算子を読む
         List<Function> suffixFuncs;
@@ -160,14 +167,14 @@ public class AbstractSyntaxTree
     }
 
     /// <summary>
-    /// 式を読む
+    /// 項を読む
     /// </summary>
     /// <param name="expr"></param>
     /// <param name="depth"></param>
     /// <returns></returns>
-    private IFormula ReadFormula(IToken expr,int depth)
+    private IFormula ReadMidTerm(IToken expr,int depth)
     {
-        Debug($"ReadFormula : {expr}",depth);
+        Debug($"ReadMidTerm : {expr}",depth);
         
         IFormula result;
         
@@ -205,7 +212,7 @@ public class AbstractSyntaxTree
                 }
 
                 // 関数本体を取り出す
-                IFormula function = ReadFormula(funcCall.Function,depth+1);
+                IFormula function = ReadMidTerm(funcCall.Function,depth+1);
                 
                 // 関数呼び出しとして終了
                 result = new FunctionCall(function,parameters);
