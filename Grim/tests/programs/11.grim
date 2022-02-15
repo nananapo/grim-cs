@@ -1,6 +1,6 @@
-__assign(:+; opm 1(v1 v2) __add(v1 v2) end)
+__assign(:+; opm -1(v1 v2) __add(v1 v2) end)
 
-__assign(:-; opm 2(v1 v2) __add(v1 __negate(v2)) end)
+__assign(:-; opm -2(v1 v2) __add(v1 __negate(v2)) end)
 
 __put(2 + 3 + 10)
 
