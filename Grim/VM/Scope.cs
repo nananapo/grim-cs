@@ -3,16 +3,19 @@
 public class Scope
 {
 
-    public readonly Scope? LexicalScope;
+    public readonly int ScopeId;
+    
+    public readonly int LexicalScopeId;
 
-    public readonly Scope? DynamicScope; 
+    public readonly int DynamicScopeId; 
         
     private readonly Dictionary<string, IVariable> _dict = new();
 
-    public Scope(Scope? lexicalScope, Scope? dynamicScope)
+    public Scope(int id,int lexicalScopeId, int dynamicScopeId)
     {
-        LexicalScope = lexicalScope;
-        DynamicScope = dynamicScope;
+        ScopeId = id;
+        LexicalScopeId = lexicalScopeId;
+        DynamicScopeId = dynamicScopeId;
     }
 
     public bool TryGet(string name,out IVariable result)

@@ -4,31 +4,46 @@ namespace Grim.VM;
 
 public class RunStack
 {
-
-    public readonly Scope Root = new(null,null);
+    public int Now { get; private set; } = -1;
     
-    // 現在のスコープ
-    public Scope Now { get; private set; }
-
     public int StackCount { get; private set; } = 0;
 
-    public RunStack()
-    {
-        Now = Root;
-    }
+    private int SCOPE_ID_INCREMENTAL = 0;
 
-    public Scope Push(Scope lexicalScope)
+    private readonly Dictionary<int, Scope> _scopes = new()
+    {
+        {0,new Scope(0,-1, -1)}
+    };
+
+    public void Push(int lexicalScopeId)
     {
         StackCount++;
-        var newScope = new Scope(lexicalScope, Now);
-        Now = newScope;
-        return newScope;
+        
+        var newScope = new Scope(++SCOPE_ID_INCREMENTAL,lexicalScopeId, Now);
+        _scopes[newScope.ScopeId] = newScope;
+
+        Now = newScope.ScopeId;
     }
 
     public void Pop()
     {
+        if (StackCount == 0)
+        {
+            throw new Exception("pop count");
+        }
         StackCount--;
-        Now = Now.DynamicScope ?? throw new Exception("pop count");
+
+        var scope = _scopes[Now];
+        Now = scope.DynamicScopeId;
+    }
+
+    public void SetVariable(int scopeId, string name, IVariable variable)
+    {
+        if (!_scopes.ContainsKey(scopeId))
+        {
+            throw new Exception($"illegal scope {scopeId}");
+        }
+        _scopes[scopeId].Set(name,variable);
     }
 
     /// <summary>
@@ -54,14 +69,15 @@ public class RunStack
         }
         
         // 遡って探す
-        var current = Now;
-        while (current != null)
+        var currentId = Now;
+        while (currentId != -1)
         {
-            if (current.TryGet(name,out var result))
+            var scope = _scopes[currentId];
+            if (scope.TryGet(name,out var result))
             {
                 return result;
             }
-            current = isLexicalScope ? current.LexicalScope : current.DynamicScope;
+            currentId = isLexicalScope ? scope.LexicalScopeId : scope.DynamicScopeId;
         }
         
         // 見つからなかったらVoidを返す

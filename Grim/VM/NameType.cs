@@ -5,12 +5,12 @@ public sealed class NameType : IVariable,IEquatable<NameType>
     
     public readonly string Name;
 
-    public readonly Scope Scope;
+    public readonly int DefinedScopeId;
     
-    public NameType(string name,Scope scope)
+    public NameType(string name,int definedScopeId)
     {
         Name = name;
-        Scope = scope;
+        DefinedScopeId = definedScopeId;
     }
 
     public override string ToString()
@@ -22,7 +22,7 @@ public sealed class NameType : IVariable,IEquatable<NameType>
     {
         if (ReferenceEquals(null, other)) return false;
         if (ReferenceEquals(this, other)) return true;
-        return Name == other.Name && Scope.Equals(other.Scope);
+        return Name == other.Name && DefinedScopeId.Equals(other.DefinedScopeId);
     }
 
     public override bool Equals(object? obj)
@@ -32,6 +32,6 @@ public sealed class NameType : IVariable,IEquatable<NameType>
 
     public override int GetHashCode()
     {
-        return HashCode.Combine(Name, Scope);
+        return HashCode.Combine(Name, DefinedScopeId);
     }
 }
