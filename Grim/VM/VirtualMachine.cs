@@ -442,9 +442,16 @@ public class VirtualMachine
             }
             case BuiltInFunctionType.Put:
             {
-                var str = string.Join(" ", variables);
+                string str = variables[0].ToString();
                 _outputFunction(str);
                 result = new ConstantData<string>(str);
+                break;
+            }
+            case BuiltInFunctionType.PERROR:
+            {
+                string str = variables[0].ToString();
+                Console.Error.Write(str);
+                result = Void.Instance;
                 break;
             }
             case BuiltInFunctionType.Input:

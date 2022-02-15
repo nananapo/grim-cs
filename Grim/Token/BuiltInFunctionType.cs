@@ -3,6 +3,7 @@
 public enum BuiltInFunctionType
 {
     Put,
+    PERROR,
     Input,
     Assign,
     Add,
@@ -26,6 +27,9 @@ public static class BuiltInFunctionHelper
                 break;
             case "__put":
                 type = BuiltInFunctionType.Put;
+                break;
+            case "__perror":
+                type = BuiltInFunctionType.PERROR;
                 break;
             case "__input":
                 type = BuiltInFunctionType.Input;
@@ -61,10 +65,11 @@ public static class BuiltInFunctionHelper
         return true;
     }
 
-    public static Dictionary<BuiltInFunctionType, int> BuiltInFunctionParameterCounts = new()
+    public static readonly Dictionary<BuiltInFunctionType, int> BuiltInFunctionParameterCounts = new()
     {
         {BuiltInFunctionType.Assign,2},
         {BuiltInFunctionType.Put,1},
+        {BuiltInFunctionType.PERROR,1},
         {BuiltInFunctionType.Input,0},
         {BuiltInFunctionType.Add,2},
         {BuiltInFunctionType.Negate,1},
