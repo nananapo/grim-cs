@@ -307,7 +307,7 @@ public class VirtualMachine
         var nc = function.AppliedParameterVariables.Count + parameters.Count;
         if (nc > function.Parameters.Count)
         {
-            throw new ArgumentException($"関数に対して多すぎる引数を割り当てようとしています");
+            throw new ArgumentException($"関数に対して多すぎる引数を割り当てようとしています\n expected : {function.Parameters.Count}\n actual : {nc}");
         }
 
         IVariable result;
@@ -632,7 +632,7 @@ public class VirtualMachine
                 // stackなし呼び出し
                 var tokenizer = new Tokenizer(program);
                 var term = tokenizer.Tokenize();
-                result = Execute(term,enableStack:false);
+                result = Execute(term,depth:depth+1,enableStack:false);
                 
                 break;
             }

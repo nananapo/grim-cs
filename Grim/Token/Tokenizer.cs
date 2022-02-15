@@ -38,7 +38,7 @@ public class Tokenizer
         }
 
         List<string> parameterNames = new ();
-        if(index < _program.Length)
+        if(-1 < index && index < _program.Length)
         {
             if(_program[index] == '(')
             {
