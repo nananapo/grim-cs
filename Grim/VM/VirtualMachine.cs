@@ -81,30 +81,48 @@ public class VirtualMachine
     private IVariable Evaluate(IFormula target, int depth)
     {
         //Debug($"EA {target}",depth);
-
-        if (target is Unknown unknown)
+        
+        // 既に評価済み
+        if (target is ConstantData<string> ||
+            target is ConstantData<int> ||
+            target is Function ||
+            target is NameType ||
+            target is Void)
         {
-            if (_runStack.TryGetVariable(unknown.Name,out var result))
+            return (IVariable)target;
+        }
+
+        // 関数呼び出し
+        if (target is FunctionCall functionCall)
+        {
+            // 関数を取得する
+            var body = Evaluate(functionCall.Lambda, depth+1);
+        
+            // 正常に取得できなかった
+            if (body is not Function function)
             {
-                return result;
+                throw new  Exception(body.GetType().Name + "は関数ではないため呼ぶことができません。");
             }
             
+            return CallFunction(function,functionCall.Parameters,depth+1);
+        }
+
+        // 不明な変数
+        if (target is Unknown unknown)
+        {
             // 不明ならエラー
-            throw new Exception($"\"{unknown.Name}\"を解決できませんでした");
+            if (!_runStack.TryGetVariable(unknown.Name,out var result))
+            {
+                throw new Exception($"\"{unknown.Name}\"を解決できませんでした");
+            }
+            
+            return result;
         }
         
         return target switch
         {
-            // 定数
-            ConstantData<string> value => value,
-            ConstantData<int> value => value,
-            
             Formula formula => EvaluateFormula(formula, depth),
-            FunctionCall call => Evaluate(call, depth),
             Term modifierTerm => EvaluateTerm(modifierTerm,depth),
-            Function function => function,
-            NameType nameType => nameType,
-            Void v => v,
             _ => throw new NotImplementedException(target.GetType().FullName)
         };
     }
@@ -203,31 +221,7 @@ public class VirtualMachine
         Debug($"-> {result}",depth);
         return result;
     }
-
-    private IVariable Evaluate(FunctionCall funcCall,int depth)
-    {
-        Debug($"EvalC : {funcCall}",depth);
-        
-        IVariable result;
-        
-        // 関数を取得する
-        var body = Evaluate(funcCall.Lambda, depth+1);
-        
-        // 正常に取得できた場合、実行する
-        if (body is Function function)
-        {
-            result = CallFunction(function,funcCall.Parameters,depth+1);
-        }
-        // それ以外ならエラー
-        else
-        {
-            throw new  Exception("Value is not function");
-        }
-
-        Debug($"-> {result}",depth);
-        return result;
-    }
-
+    
     /// <summary>
     /// </summary>
     /// <param name="term"></param>
