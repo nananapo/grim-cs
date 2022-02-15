@@ -15,7 +15,6 @@ switch (args[0])
             Console.WriteLine("Usage: run [program file path]");
             return;
         }
-        
         var fileName = args[1];
         var program = string.Join("\n",File.ReadAllLines(fileName));
         

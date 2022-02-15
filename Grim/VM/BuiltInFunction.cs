@@ -41,6 +41,12 @@ public  class BuiltInFunction : IVariable
             case "__equal":
                 builtInFunction = Create(BuiltInFunctionType.Equal);
                 break;
+            case "__if":
+                builtInFunction = Create(BuiltInFunctionType.If);
+                break;
+            case "__while":
+                builtInFunction = Create(BuiltInFunctionType.While);
+                break;
             default:
                 builtInFunction = null;
                 return false;

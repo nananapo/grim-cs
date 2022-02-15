@@ -7,5 +7,7 @@ public enum BuiltInFunctionType
     Assign,
     Add,
     Negate,
-    Equal
+    Equal,
+    If,
+    While
 }

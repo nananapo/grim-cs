@@ -1,4 +1,5 @@
-﻿using Grim.Token;
+﻿using System.Diagnostics;
+using Grim.Token;
 using Grim.VM;
 using Void = Grim.VM.Void;
 
@@ -15,7 +16,8 @@ public class AbstractSyntaxTree
         EnableLogging = enableLogging;
         _runStack = runStack;
     }
-
+    
+    [Conditional("DEBUG")] 
     private void Debug(string text, int depth)
     {
         if (!EnableLogging) return;

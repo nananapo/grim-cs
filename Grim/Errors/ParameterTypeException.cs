@@ -11,5 +11,5 @@ public class ParameterTypeException : Exception
         Values = values;
     }
 
-    public override string Message => $"{string.Join("と",Values.Select(v=>v.GetType()))} に{FuncName}を適用することができません。";
+    public override string Message => $"{FuncName}に{string.Join("と",Values.Select(v=>v.GetType()))}を適用することができません。";
 }

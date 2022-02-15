@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using Grim.AST;
 using Grim.Errors;
 using Grim.Token;
@@ -25,7 +26,8 @@ public class VirtualMachine
         EnableLogging = enableLogging;
         _ast = new(_runStack,enableLogging:enableLogging);
     }
-
+    
+    [Conditional("DEBUG")] 
     private void Debug(string text, int depth)
     {
         if (!EnableLogging) return;
@@ -36,7 +38,7 @@ public class VirtualMachine
         
         Console.WriteLine($"[VM]  {depth} {spaces}{text}");
     }
-
+    
     public IVariable Execute(List<IToken> exprs,Scope? lexicalScope = null,Dictionary<string,IVariable>? variables = null,int depth = 0)
     {
         // 省略注意
@@ -47,7 +49,7 @@ public class VirtualMachine
         
         // スタックする
         _runStack.Push(lexicalScope);
-        
+      
         Debug($"STACK PUSH[{_runStack.StackCount}]",depth);
 
         // 引数を環境に入れる
@@ -66,9 +68,13 @@ public class VirtualMachine
         while (-1 < index && index < exprs.Count)
         {
             IFormula formula;
+#if DEBUG
             if(EnableLogging) Console.WriteLine();
+#endif
             (index,formula) = _ast.NextFormula(exprs,index,0);
+#if DEBUG
             if(EnableLogging) Console.WriteLine();
+#endif
             result = Evaluate(formula,depth+1);
         }
 
@@ -135,13 +141,6 @@ public class VirtualMachine
             
             var lefts = ops.Where(v => v.Priority == max && v.IsLeftAssociative).ToList();
             var rights = ops.Where(v => v.Priority == max && !v.IsLeftAssociative).ToList();
-            
-            /*
-            Console.WriteLine("COUNT : Term:" + terms.Count + " OP:"+ops.Count);
-            Console.WriteLine("MAX : " + max);
-            Console.WriteLine("L : " + string.Join(" , ",lefts));
-            Console.WriteLine("R : " + string.Join(" , ",rights));
-            */
 
             // すべてが右結合の場合
             if (lefts.Count == 0)
@@ -337,7 +336,7 @@ public class VirtualMachine
     /// <param name="depth"></param>
     /// <returns></returns>
     /// <exception cref="ArgumentException"></exception>
-    private IVariable CallFunction(Function function, List<IFormula> formulas,int depth)
+    private IVariable CallFunction(Function function, IList<IFormula> formulas,int depth)
     {
         Debug($"EvalFT : {function}",depth);
         
@@ -396,9 +395,9 @@ public class VirtualMachine
 
                 var value = variables[1];
                 nameType.Scope.Set(nameType.Name, value);
-                
-                Debug("ASSIGNED " + nameType.Name +" : "+ value,depth);
-                
+
+                Debug("ASSIGNED " + nameType.Name + " : " + value, depth);
+
                 result = value;
                 break;
             }
@@ -413,7 +412,7 @@ public class VirtualMachine
             {
                 if (variables.Count != 0)
                     throw new ArgumentException("parameter not match");
-                
+
                 var str = _inputFunction();
                 result = new ConstantData<string>(str ?? "");
                 break;
@@ -432,7 +431,7 @@ public class VirtualMachine
                     {
                         ConstantData<string> ds2 => new ConstantData<string>(ds1.Value + ds2.Value),
                         ConstantData<int> di2 => new ConstantData<string>(ds1.Value + di2.Value),
-                        _ => throw new ParameterTypeException("__add",va1, va2)
+                        _ => throw new ParameterTypeException("__add", va1, va2)
                     };
                 }
                 else if (va1 is ConstantData<int> di1)
@@ -441,14 +440,14 @@ public class VirtualMachine
                     {
                         ConstantData<string> ds2 => new ConstantData<string>(di1.Value + ds2.Value),
                         ConstantData<int> di2 => new ConstantData<int>(di1.Value + di2.Value),
-                        _ => throw new ParameterTypeException("__add",va1, va2)
+                        _ => throw new ParameterTypeException("__add", va1, va2)
                     };
                 }
                 else
                 {
-                    throw new ParameterTypeException("__add",va1, va2);
+                    throw new ParameterTypeException("__add", va1, va2);
                 }
-                
+
                 break;
             }
             case BuiltInFunctionType.Negate:
@@ -456,16 +455,17 @@ public class VirtualMachine
                 if (variables.Count != 1)
                     throw new ArgumentException("parameter not match");
 
-                var va = variables[0]; 
-                
+                var va = variables[0];
+
                 if (va is ConstantData<int> data)
                 {
                     result = new ConstantData<int>(data.Value * -1);
                 }
                 else
                 {
-                    throw new ParameterTypeException("__negate",va);
+                    throw new ParameterTypeException("__negate", va);
                 }
+
                 break;
             }
             case BuiltInFunctionType.Equal:
@@ -477,6 +477,79 @@ public class VirtualMachine
                 var va2 = variables[1];
 
                 result = new ConstantData<int>(va1.Equals(va2) ? 1 : 0);
+                break;
+            }
+            case BuiltInFunctionType.If:
+            {
+                if (variables.Count != 2 &&
+                    variables.Count != 3)
+                    throw new ArgumentException("parameter not match");
+                
+                var va1 = variables[0];
+                var va2 = variables[1];
+
+                if (va1 is not ConstantData<int> f1)
+                {
+                    throw new ParameterTypeException("__if", va1);
+                }
+                
+                if (va2 is not Function f2)
+                {
+                    throw new ParameterTypeException("__if", va2);
+                }
+                
+                if (f1.Value == 1)
+                {
+                    CallFunction(f2, Array.Empty<IFormula>(), depth + 1);
+                }
+                else if(variables.Count == 3)
+                {
+                    var va3 = variables[2];
+                    if (va3 is Function f3)
+                    {
+                        CallFunction(f3, Array.Empty<IFormula>(), depth + 1);
+                    }
+                    else
+                    {
+                        throw new ParameterTypeException("__if", va3);
+                    }
+                }
+
+                result = Void.Instance;
+                break;
+            }
+            case BuiltInFunctionType.While:
+            {
+                if (variables.Count != 2)
+                    throw new ArgumentException("parameter not match");
+                
+                var va1 = variables[0];
+                var va2 = variables[1];
+
+                if (va1 is not Function f1)
+                {
+                    throw new ParameterTypeException("__if", va1);
+                }
+                
+                if (va2 is not Function f2)
+                {
+                    throw new ParameterTypeException("__if", va2);
+                }
+
+                while(true)
+                {
+                    // 評価
+                    IVariable current = CallFunction(f1, Array.Empty<IFormula>(), depth + 1);
+                    if (current is not ConstantData<int> {Value: 1})
+                    {
+                        break;
+                    }
+                    
+                    // 呼ぶ
+                    CallFunction(f2, Array.Empty<IFormula>(), depth + 1);
+                }
+
+                result = Void.Instance;
                 break;
             }
             default:
