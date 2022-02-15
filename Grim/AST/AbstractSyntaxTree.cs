@@ -256,9 +256,9 @@ public class AbstractSyntaxTree
                 }
                     
                 // builtin
-                if (BuiltInFunction.TryParse(name, out var builtInFunction))
+                if (BuiltInFunctionHelper.TryParse(name, out var builtInType))
                 {
-                    result = builtInFunction;
+                    result = new Function(builtInType);
                     break;
                 }
                     
