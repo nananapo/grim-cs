@@ -13,5 +13,6 @@
 // "関数"
 :print = fun(text) __put(text + "\n") end
 :if = __if
+:ifElse = __ifElse
 :while = __while
 :import = fun(fileName) __eval(__read(fileName)) end

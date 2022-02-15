@@ -521,8 +521,7 @@ public class VirtualMachine
             }
             case BuiltInFunctionType.If:
             {
-                if (variables.Count != 2 &&
-                    variables.Count != 3)
+                if (variables.Count != 2)
                     throw new ArgumentException("parameter not match");
                 
                 var va1 = variables[0];
@@ -540,22 +539,44 @@ public class VirtualMachine
                 
                 if (f1.Value == 1)
                 {
-                    CallFunction(f2, Array.Empty<IFormula>(), depth + 1);
+                    result = CallFunction(f2, Array.Empty<IFormula>(), depth + 1);
                 }
-                else if(variables.Count == 3)
+                else
                 {
-                    var va3 = variables[2];
-                    if (va3 is Function f3)
-                    {
-                        CallFunction(f3, Array.Empty<IFormula>(), depth + 1);
-                    }
-                    else
-                    {
-                        throw new ParameterTypeException("__if", va3);
-                    }
+                    result = Void.Instance;
                 }
+                break;
+            }
+            case BuiltInFunctionType.IfElse:
+            {
+                if (variables.Count != 3)
+                    throw new ArgumentException("parameter not match");
+                
+                var va1 = variables[0];
+                var va2 = variables[1];
+                var va3 = variables[2];
 
-                result = Void.Instance;
+                if (va1 is not ConstantData<int> f1)
+                {
+                    throw new ParameterTypeException("__if", va1);
+                }
+                if (va2 is not Function f2)
+                {
+                    throw new ParameterTypeException("__if", va2);
+                }
+                if (va3 is not Function f3)
+                {
+                    throw new ParameterTypeException("__if", va3);
+                }
+                
+                if (f1.Value == 1)
+                {
+                    result = CallFunction(f2, Array.Empty<IFormula>(), depth + 1);
+                }
+                else
+                {
+                    result = CallFunction(f3, Array.Empty<IFormula>(), depth + 1);
+                }
                 break;
             }
             case BuiltInFunctionType.While:
