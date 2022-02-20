@@ -1,13 +1,13 @@
-﻿__assign(:=; opm 3(name value) __assign(name; value) end)
+﻿__assign(:=; opm 1(name value) __assign(name; value) end)
 
 :// = opp 0(comment) end;
-:$  = opm 1(fn va) fn(va) end 
-:== = opm 4(va1 va2) __equal(va1; va2) end
-:!= = opm 4(va1 va2) !(va1 == va2) end
+:$  = opm 2(fn va) fn(va) end 
+:== = opm 3(va1 va2) __equal(va1; va2) end
+:!= = opm 3(va1 va2) !(va1 == va2) end;
 :+  = opm -5(va1 va2) __add(va1; va2) end
 :-  = opm -5(va1 va2) va1 + __negate(va2) end
+:*  = opm -7(va1 va2) __ifElse(va2 == 0 fun 0 end fun va1 + va1 * (va2 - 1) end) end;
 :!  = opp 10(va) 0 == va end;
-
 
 
 // "関数"

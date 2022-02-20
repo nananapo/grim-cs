@@ -1,4 +1,4 @@
-﻿namespace Grim.VM;
+﻿namespace Grim.Token;
 
 public enum BuiltInFunctionType
 {
@@ -13,6 +13,7 @@ public enum BuiltInFunctionType
     IfElse,
     While,
     ReadFile,
+    StrAt,
     Eval
 }
 
@@ -55,6 +56,9 @@ public static class BuiltInFunctionHelper
             case "__read":
                 type = BuiltInFunctionType.ReadFile;
                 break;
+            case "__strAt":
+                type = BuiltInFunctionType.StrAt;
+                break;
             case "__eval":
                 type = BuiltInFunctionType.Eval;
                 break;
@@ -78,6 +82,7 @@ public static class BuiltInFunctionHelper
         {BuiltInFunctionType.IfElse,3},
         {BuiltInFunctionType.While,2},
         {BuiltInFunctionType.ReadFile,1},
+        {BuiltInFunctionType.StrAt,2},
         {BuiltInFunctionType.Eval,1}
     };
 }

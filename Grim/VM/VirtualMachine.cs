@@ -637,6 +637,36 @@ public class VirtualMachine
                 result = new ConstantData<string>(str);
                 break;
             }
+            case BuiltInFunctionType.StrAt:
+            {
+                if (variables.Count != 2)
+                    throw new ArgumentException("parameter not match");
+                
+                var va = variables[0];
+                var va2 = variables[1];
+                
+                if (va is not ConstantData<string> data1)
+                {
+                    throw new ParameterTypeException("__strAt", va,va2);
+                }
+                
+                if (va2 is not ConstantData<int> data2)
+                {
+                    throw new ParameterTypeException("__strAt", va,va2);
+                }
+
+                var str = data1.Value;
+                var index = data2.Value;
+
+                if (index >= str.Length)
+                {
+                    result = Void.Instance;
+                    break;
+                }
+                
+                result = new ConstantData<string>(str[index].ToString());
+                break;
+            }
             case BuiltInFunctionType.Eval:
             {
                 if (variables.Count != 1)
