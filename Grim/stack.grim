@@ -1,4 +1,5 @@
-﻿fun(pushName popName peekName getLenName)
+﻿// "dependent on std"
+fun(pushName popName peekName getLenName)
     :__item* = :__item
     :__item = void
     
@@ -8,7 +9,7 @@
     
     :pop* = :pop
     :pop = fun
-        __perror("empty list")
+        __perror("empty stack")
     end
     popName = pop
     
