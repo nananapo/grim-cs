@@ -596,6 +596,8 @@ public class VirtualMachine
                 {
                     throw new ParameterTypeException("__if", va2);
                 }
+                
+                result = Void.Instance;
 
                 while(true)
                 {
@@ -607,10 +609,8 @@ public class VirtualMachine
                     }
                     
                     // 呼ぶ
-                    CallFunction(f2, Array.Empty<IFormula>(), depth + 1);
+                    result = CallFunction(f2, Array.Empty<IFormula>(), depth + 1);
                 }
-
-                result = Void.Instance;
                 break;
             }
             case BuiltInFunctionType.ReadFile:
