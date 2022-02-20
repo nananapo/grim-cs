@@ -11,8 +11,21 @@
 
 
 // "関数"
-:print = fun(text) __put(text + "\n") end
+:print = fun(text) __put(text) __put("\n") end
+
 :if = __if
 :ifElse = __ifElse
 :while = __while
-:import = fun(fileName) __eval(__read(fileName)) end
+:strAt = __strAt
+:eval = __eval
+:read = __read
+
+:voidFunc = fun end
+:void = voidFunc()
+
+:strLen = fun(str)
+    :i = 0
+    :i* = :i
+    while(fun strAt(str i) != void end fun i* = i + 1 end)
+end
+
