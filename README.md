@@ -171,3 +171,13 @@ __put(a)
 ```
 
 上のプログラムの場合、3 \* 2 , 1 + 6 , \:a = 7 の順に実行されます。
+
+## サンプル
+
+あると便利な演算子と関数の実装
+
+https://github.com/nananapo/grim-cs/blob/main/Grim/std.grim
+
+連結リストを操作する関数を返す関数
+
+https://github.com/nananapo/grim-cs/blob/main/Grim/list.grim
