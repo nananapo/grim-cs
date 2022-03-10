@@ -6,7 +6,7 @@
 [nananapo/grim-lang](https://github.com/nananapo/grim-lang)を良くしたもの
 
 ```
-__assign(:aisatu "HelloWorld")
+__assign(:aisatu "Hello World!")
 __put(aisatu)
 ```
 
