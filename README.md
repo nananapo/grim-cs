@@ -10,6 +10,9 @@ __assign(:aisatu "Hello World!")
 __put(aisatu)
 ```
 
+## デモ
+http://grim.oekaki.chat
+
 ## 概要
 
 この言語の名前はgrimです。
