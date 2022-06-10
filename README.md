@@ -181,6 +181,6 @@ __put(a)
 
 https://github.com/nananapo/grim-cs/blob/main/Grim/std.grim
 
-連結リストを操作する関数を返す関数
+スタックを操作する関数を返す関数
 
 https://github.com/nananapo/grim-cs/blob/main/Grim/list.grim
